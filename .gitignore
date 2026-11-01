@@ -1,0 +1,52 @@
+# Unity gitignore
+# Covers binaries, temporary files, editor generated files and OS files
+
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Asset meta data should only be ignored when the corresponding asset is also ignored
+![Aa]ssets/**/*.meta
+
+# Unity generated files
+sysinfo.txt
+*.apk
+*.aab
+*.unitypackage
+*.app
+crashlytics-build.properties
+
+# Visual Studio / VS Code / Rider / MonoDevelop generated files
+.vs/
+.idea/
+.consulo/
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Local archives & embedded external repositories
+*.zip
+ml-agents/
+.agents/plugins/unity-agent-plugin/
