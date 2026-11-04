@@ -3,7 +3,7 @@
 Unity 6 (6000.6.7f1), URP 17.6. Target: Android first. Solo developer, so keep tasks small and end each task with "How to test".
 
 ## Game in one paragraph
-Dinosaur park tycoon. Clash of Clans-style tilted camera (drag to pan, pinch to zoom, clamped to the map). Mountains border the map. Player clears trees/rocks by selecting an area, builds on a grid (1 cell = 2 m): cages, hatchery/lab, roads, canteen. Dinosaurs unlock by level, guests walk the roads. Endless expansion, daily rewards. Money mainly from ads (rewarded ads first), plus small extras.
+Dinosaur park tycoon. Clash of Clans-style tilted camera (drag to pan, pinch to zoom, clamped to the map). V1 is one island with an ocean border (camera clamped at the shore); mountains stay as terrain on the island. Player clears trees/rocks by selecting an area, builds on a grid (1 cell = 2 m): cages, hatchery/lab, roads, canteen. Dinosaurs unlock by level, guests walk the roads. Endless expansion, daily rewards. Money mainly from ads (rewarded ads first), plus small extras.
 
 ## Folders
 - Assets/Models, Materials, Animations: imported art (buildings, enclosures, roads, props, characters, environment, 6 dinosaurs)
@@ -15,6 +15,15 @@ Dinosaur park tycoon. Clash of Clans-style tilted camera (drag to pan, pinch to 
 - Assets/Plugins/CW: Lean Touch (touch camera). NaughtyAttributes and Colorful Hierarchy are installed too
 - .agents/rules and .agents/skills: domain rules and skills (touch, UI, ads/IAP, audio, FBX, performance, logcat, notifications)
 - _Reference: old editor scripts, Blender generation scripts and the old AGENTS file. Not compiled, read-only reference
+
+## Design docs (read before art or scope work)
+- `Docs/DESIGN_BIBLE.md` art rules, palette, scale. `Docs/BUILDING_IDENTITY.md` per-building identity matrix. `Docs/V1_PLAN.md` V1 scope, schedule, cut order.
+- Skills: `dino-park-art-bible`, `dino-park-building-identity`, `dino-park-v1-scope` in `.agents/skills`.
+- Rule: same park, same palette, different architecture. Tier A landmarks need unique roofline + primary material + silhouette; Tier B small services need unique silhouette + roofline. Silhouette test (black, 64 px) before modelling.
+- V1 is the revised test build (9 species, 1 island, 1 event), not the full vision.
+
+## Studio framework (Claude Code Game Studios)
+`.claude/` holds 49 agents and ~74 slash skills (installed 4 Nov 2026). Config: `project.yaml` (Unity 6000.6.7f1, C#, URP). Code root is `Assets/`. Framework `docs/` means our `Docs/`. Workflow: `/start` -> `/brainstorm` -> `/map-systems` -> `/design-system` -> `/create-architecture` -> `/create-epics` -> `/dev-story` -> `/code-review` -> `/story-done`; scope via `/scope-check` and `/gate-check` against `Docs/V1_PLAN.md`; device checks via `/perf-profile` and `/playtest-report`. Agents propose, the developer approves every file write. Not using Codex? Ignore `.codex`; Codex-style rules stay in `.agents/rules`.
 
 ## Principles
 1. Unity 6 + URP only. No built-in pipeline calls.
@@ -38,5 +47,5 @@ Model pivots at base center, flat bottom, no baked shadows.
 
 ## Building component kit (reuse on every building)
 Blender kit in `_Source/Blender/SouvenirShop.blend`, collection CMP_Library, asset tag `building-component`. Full list and rules: `_Source/Blender/COMPONENTS.md`.
-Components: CMP_Window, CMP_AC_Unit, CMP_Vent_Louver, CMP_Drain_Pipe, CMP_Wall_Lamp, CMP_Meter_Box, CMP_Solar_Panel (1.6 x 1.0 m).
+Components: CMP_Window, CMP_AC_Unit, CMP_Vent_Louver, CMP_Drain_Pipe, CMP_Wall_Lamp, CMP_Meter_Box, CMP_Solar_Panel (1.6 x 1.0 m). Extended kit (12 more, in `Hangar.blend`): CMP_Hazard_Post, CMP_Hazard_Sticker, CMP_Sign_Plaque, CMP_Windsock, CMP_Utility_Cabinet, CMP_Pipe_Elbow, CMP_Ground_Box, CMP_Roller_Door, CMP_Skylight_Curved, CMP_Grass_Tuft, CMP_Personnel_Door, CMP_Dino_Footprint. Kit parts are details and upgrades; they must never define a building's identity. Name sockets SOCKET_SolarPanel, SOCKET_ACUnit, SOCKET_MeterBox, SOCKET_WallLamp, SOCKET_Vent, SOCKET_Window.
 Rules: wall parts face +Y with origin on the wall surface; rotate Z 0 back / 90 left / -90 right / 180 front. Solar panel origin on the roof surface. Use linked duplicates. No building should have a bare wall: give every side some windows, vents, AC, pipes or lamps from this kit before adding new one-off details.

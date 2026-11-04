@@ -44,3 +44,9 @@ Same rules as above: wall components face +Y with origin on the wall surface; ro
 
 ## Hangar (scene "Hangar" in Hangar.blend)
 Arched 10 x 12 m hangar, 3 bays, R=5 m arch, slab top z=0.15. Front: roller door, hazard posts, sign, lamps, glow strip, utility cabinet with AC/vent/meter/pipes, windsock, ramp with footprint. Back: personnel door, 2 windows, lamp, attic vent, AC, meter. Left: 2 windows + vent on the timber band. Roof: 2 skylights, 16 solar panels, 70 grass tufts. ~17k triangles before bevels. Build script: text block hangar_lib.py.
+
+## Game roles and sockets (added 4 Nov 2026)
+Kit parts are upgrades or functional details, never the building's identity (see `Docs/BUILDING_IDENTITY.md`).
+- Solar = power upgrade. AC unit = comfort upgrade for visitor buildings. Wall lamp = night safety. Meter box = grid connection. Vent louvre = required on food and service buildings. Window = night glow. Drain pipe = rain/service detail.
+- Name sockets on every building shell: SOCKET_SolarPanel, SOCKET_ACUnit, SOCKET_MeterBox, SOCKET_WallLamp, SOCKET_Vent, SOCKET_Window.
+- Hangar is now the V1 vehicle depot (barrel-vault roofline, only arched building). Souvenir shop and Hangar are not exported to Unity yet.

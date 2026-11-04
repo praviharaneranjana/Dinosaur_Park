@@ -1,0 +1,56 @@
+[
+  {
+    "clip": "Soar",
+    "start": 1,
+    "end": 96,
+    "action": "ANM_Pteranodon_Soar"
+  },
+  {
+    "clip": "Flap",
+    "start": 97,
+    "end": 144,
+    "action": "ANM_Pteranodon_Flap"
+  },
+  {
+    "clip": "Bank",
+    "start": 145,
+    "end": 240,
+    "action": "ANM_Pteranodon_Bank"
+  },
+  {
+    "clip": "WindBalance",
+    "start": 241,
+    "end": 336,
+    "action": "ANM_Pteranodon_WindBalance"
+  },
+  {
+    "clip": "Land",
+    "start": 337,
+    "end": 456,
+    "action": "ANM_Pteranodon_Land"
+  },
+  {
+    "clip": "GroundIdle",
+    "start": 457,
+    "end": 552,
+    "action": "ANM_Pteranodon_GroundIdle"
+  },
+  {
+    "clip": "FoldUnfold",
+    "start": 553,
+    "end": 648,
+    "action": "ANM_Pteranodon_FoldUnfold"
+  },
+  {
+    "clip": "Eat",
+    "start": 649,
+    "end": 768,
+    "action": "ANM_Pteranodon_Eat"
+  },
+  {
+    "clip": "Takeoff",
+    "start": 769,
+    "end": 888,
+    "action": "ANM_Pteranodon_Takeoff"
+  }
+]
