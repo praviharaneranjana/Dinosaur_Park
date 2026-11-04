@@ -50,3 +50,15 @@ Thumbs.db
 *.zip
 ml-agents/
 .agents/plugins/unity-agent-plugin/
+
+# Claude Code Game Studios (runtime state)
+.claude/settings.local.json
+CLAUDE.local.md
+project.local.yaml
+production/session-logs/
+production/session-state/
+.claude/agent-memory/
+.claude/worktrees/
+
+# Blender backups
+*.blend1
