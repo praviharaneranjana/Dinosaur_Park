@@ -31,3 +31,6 @@ Style follows the Gemini isometric reference images. Rule: same park, same palet
 
 ## Still to build
 Animals, roads, vehicles incl. helicopters (some buildings have helipads), labs, dino medical systems, waterfalls, tanks, trees/plants/flowers/grass.
+
+## Camera (decided 4 Nov 2026)
+Tilted perspective camera (pitch 50, FOV 30), drag to pan, pinch to zoom, mouse wheel in the editor. The view is locked to the island plus an ocean margin (default 16 m): the screen can never show past the playable area, and fully zoomed out the whole island plus margin fits on screen. Island size is a placeholder (160 x 160 m = 80 x 80 cells) until the Blender island exists. Camera yaw is 0 so the grid is screen-aligned; a 45 degree diamond view would need rotated bounds and is not built.

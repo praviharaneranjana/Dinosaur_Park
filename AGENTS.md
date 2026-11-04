@@ -11,7 +11,11 @@ Dinosaur park tycoon. Clash of Clans-style tilted camera (drag to pan, pinch to 
 - Assets/Models/Trains: Kenney train kit, 103 pieces (tracks, locomotives, carriages, trams). Use for a park train ride
 - Assets/Models/Town: Downtown City MegaKit free version (modular buildings, streets, sidewalks, props). FBX in Town/FBX, textures in Town/Textures
 - Assets/Concepts: approved concept images and their prompts
-- Assets/Scripts: reusable scripts from the old prototype (bird system, wind sway, pond, visitor AI, dinosaur habit AI, doors)
+- Assets/Scripts: one assembly, `DinoPark.Runtime` (asmdef at the folder root; references Lean Touch and NaughtyAttributes). New systems go in `Assets/Scripts/<System>/` under namespace `DinoPark.<System>`. Old prototype scripts (bird system, wind sway, pond, visitor AI, dinosaur habit AI, doors; namespace `MiniGame`) live here too and are not yet data-driven
+- Assets/Scripts/CameraControl: locked island camera (`IslandCameraRig`, `IslandBounds`, `IslandCameraConfig`, pure maths in `CameraFootprintMath`)
+- Assets/Editor: editor tools. `Dino Park > Setup > Build Island Scene` rebuilds `Assets/Scenes/Island.unity` (placeholder island and ocean)
+- Assets/Data: ScriptableObject data (camera config now; dinosaurs and buildings next)
+- Assets/Tests/EditMode: NUnit tests (`DinoPark.Tests.EditMode`). Run: Window > General > Test Runner > EditMode
 - Assets/Plugins/CW: Lean Touch (touch camera). NaughtyAttributes and Colorful Hierarchy are installed too
 - .agents/rules and .agents/skills: domain rules and skills (touch, UI, ads/IAP, audio, FBX, performance, logcat, notifications)
 - _Reference: old editor scripts, Blender generation scripts and the old AGENTS file. Not compiled, read-only reference
