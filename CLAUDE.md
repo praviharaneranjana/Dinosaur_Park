@@ -33,3 +33,22 @@ This folder is the whole project. Anything Claude produces for the game is saved
 - Building component kit: list is in `_Source/Blender/COMPONENTS.md`. Add new components there and in `AGENTS.md`.
 - Same-size common parts across buildings (e.g. solar panel 1.6 x 1.0 m) so building sizes read clearly.
 - Commit work to git in small commits; remote is `praviharaneranjana/Dinosaur_Park` on GitHub.
+
+## 3D modelling workflow (Blender skills pack, 94 skills)
+Skills live in `.claude/skills/` (source: github.com/arjun988/blender-skills, MIT).
+
+When making ANY 3D model (building, terrain, plant, prop, vehicle, animal, person):
+1. Read `blender-director` first and let it route to specialist skills. Index: `.claude/skills/SKILLS_GUIDE.md`.
+2. If a reference image exists, read `.claude/skills/references/reference-image-match.md` and finish the Reference Analysis before touching Blender.
+3. Typical routing for Dino Park Tycoon:
+   - Buildings: `environment-artist`, `hard-surface`, `archviz`, `prop-artist`
+   - Terrain / plants: `environment-artist`, `vegetation-artist`, `biome-worlds`
+   - Animals: `creature-artist`, `rigging`, `animation`
+   - Vehicles: `vehicle-artist`
+   - Look: `hand-painted-style`, `stylized-style`, `lowpoly-style`, `isometric-style`
+   - Finish: `materials`, `uv-workflow`, `texture-workflow`, `lod-pipeline`, `collision-proxy`, `asset-optimization`, `unity-export`, `qa-review`
+4. Drive Blender through the Blender MCP, not manual UI steps.
+5. Run `qa-review` and `.claude/skills/references/validation-checklist.md` before any export.
+
+Precedence: where a skill disagrees with this project's own docs, the project wins.
+Project docs = `Docs/DESIGN_BIBLE.md`, `Docs/BUILDING_IDENTITY.md`, BUILD_ORDER.md, `Docs/V1_PLAN.md`, `_Source/Blender/COMPONENTS.md` (scale, naming, tri budgets, export settings, kit parts linked not copied, blank signs only, palette).
