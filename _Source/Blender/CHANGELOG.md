@@ -35,3 +35,18 @@
   kelp / seaweed / coral_fan (underwater travelling wave), float (lily pad, duckweed bob + edge ripple); rigid: cacti, stumps, logs, branching/brain/table coral.
 - Unity: per-vertex colour WindData (R bend, G flutter, B phase) for a wind/water vertex shader; GN modifier is Blender preview only.
 - Optional children: *_Outline (ink hull, follows motion), *_Ground (soil/sand decal), *_Ripple (water ring).
+
+## 2026-11-05 — Island v02 (camera-matched rebuild)
+- New file 02_Environment/Island/ISL_Main_v02.blend (scene ISL2_Main, camera ISL2_RefCam matches the reference; reference overlay on the camera, alpha 0 by default).
+- Layout: 00_Shared/Tools/isl_layout_v02.py + isl_cam.py -> island_map_v02.json (grid 130x120 @ 2 m; ocean W/N/E, mainland continues south).
+- Builder: build_island_v02.py (stages scene/ground/cliffs/water/ocean/props/plants/wind) with isl_v02_*.py modules.
+- New assets (TRN2_*): CliffFace (rugged rock skirt), Waterfall_Tall (2-strand, 14 m) + Cascade_Small, Desert_MesaTall x3, Desert_Arch, Bridge_Wood, Pier_East/West, Stairs_Timber, FenceRing (posts only), Footprints, VolcanoSmoke; rock materials per kind (coast/ground/high/mud/desert/lava).
+- PLN scatter ~1,500 plants with per-object random wind (isl_wind); darker tinted local material copies (PLN2_*).
+
+## 2026-11-06 - Island v05 imported into Unity
+- Source: `ISL_Main_v05.blend` (branch claude/island-realism-terrain-311e32). Exporter: `00_Shared/Tools/export_island_unity.py` (headless, never saves the blend):
+  `blender -b ISL_Main_v05.blend --python export_island_unity.py -- <Unity>/Assets/Models/Environment/Island 4096`
+- Procedural materials are baked (Cycles diffuse COLOR) to a vertex colour `BakeCol`; ground baked to `Textures/ISL_Ground_Albedo.png` (4K, top-down UV). Leaf-card transparent mixes are bypassed for the bake; leaf atlases are kept for alpha cut-out.
+- One FBX per unique mesh (100: 15 props, 42 plants, ground, cliffs, ocean, 39 water pieces) + `island_layout.json` (2,260 placements as Blender world matrices) + axis probes.
+- Unity: menu Dino Park > Island > Import Island From Blender Export (`Assets/Editor/Island/IslandImporter.cs`) builds materials (`Assets/Materials/Environment/Island`, shader `DinoPark/Environment/VertexColorLit`), prefabs (`Assets/Prefabs/Environment/Island`) and the `--- Island ---` group in `Island.unity`. Island turned 180 deg so north = +Z; IslandBounds = 290 x 360 m; terrain, cliffs and rocks have MeshColliders.
+- Known gaps: ~10M triangles placed (trees are source/LOD0 meshes, no LODs yet), water is static (no scrolling waterfall shader), per-tree colour variation from Object Info is lost, the south edge of the ground is a straight cut.
