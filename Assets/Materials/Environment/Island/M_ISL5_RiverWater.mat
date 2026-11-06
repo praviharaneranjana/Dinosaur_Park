@@ -29,18 +29,31 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _DetailMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _AlphaClip: 0
     - _Cull: 2
     - _Cutoff: 0.4
+    - _DetailStrength: 1
+    - _DetailTiling: 0.18
     - _DstBlend: 10
+    - _MossAmount: 0.5
     - _Smoothness: 0.85
     - _SrcBlend: 5
+    - _StrataHeight: 1.6
+    - _StrataStrength: 0.35
     - _Transparent: 1
+    - _Triplanar: 0
     - _UseMapColor: 0
+    - _WindFlutter: 0
+    - _WindSway: 0
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 0.8}
+    - _MossColor: {r: 0.31999996, g: 0.4699999, b: 0.17999998, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -50,3 +50,13 @@
 - One FBX per unique mesh (100: 15 props, 42 plants, ground, cliffs, ocean, 39 water pieces) + `island_layout.json` (2,260 placements as Blender world matrices) + axis probes.
 - Unity: menu Dino Park > Island > Import Island From Blender Export (`Assets/Editor/Island/IslandImporter.cs`) builds materials (`Assets/Materials/Environment/Island`, shader `DinoPark/Environment/VertexColorLit`), prefabs (`Assets/Prefabs/Environment/Island`) and the `--- Island ---` group in `Island.unity`. Island turned 180 deg so north = +Z; IslandBounds = 290 x 360 m; terrain, cliffs and rocks have MeshColliders.
 - Known gaps: ~10M triangles placed (trees are source/LOD0 meshes, no LODs yet), water is static (no scrolling waterfall shader), per-tree colour variation from Object Info is lost, the south edge of the ground is a straight cut.
+
+## 2026-11-06 - Island v05 Unity polish pass (Unity-side, Blender to follow)
+- Menu Dino Park > Island > Apply Polish Pass (runs automatically after Import). Code: Assets/Editor/Island/IslandPolish*.cs, textures generated in code (ProceduralTextures.cs, no third-party images).
+- Ramp road flattened to an even grade, flat across; entrance road flattened; rocks/plants cleared off both.
+- Plateau cliff rebuilt from the ground's 11 m contour: layered rock wall with ledges, joint blocks, moss (Blender TRN5 cliff disabled).
+- Waterfalls rebuilt: two-layer curtains (streaks, glassy lip, foam base), radial plunge foam, spray + mist particles (Blender boil spheres/mist disabled). River and plateau stream rebuilt as flow-mapped surfaces along their centre lines; ponds/mud/swamp restyled.
+- Ocean: wave mesh (Gerstner), depth from distance to shore, surf bands rolling onto the beach, shore foam.
+- Wind sway on all plant materials (WindSettings component).
+- Land side: south mountain range with forest, concrete tunnel portal + interior, asphalt road to the plaza, looping visitor cars (VehicleTraffic). Camera from the east (yaw -90, pitch 52, max 215 m). URP depth texture on.
+- To do in Blender later: mountain + tunnel, proper river bed depth, pond outlines (stair-step edges), mobile LODs for trees.

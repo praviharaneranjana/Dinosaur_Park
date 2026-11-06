@@ -1,9 +1,9 @@
-# AI Agent Directives: Dino Park Tycoon (mobile)
+﻿# AI Agent Directives: Dino Park Tycoon (mobile)
 
 Unity 6 (6000.6.7f1), URP 17.6. Target: Android first. Solo developer, so keep tasks small and end each task with "How to test".
 
 ## Game in one paragraph
-Dinosaur park tycoon. Clash of Clans-style tilted camera (drag to pan, pinch to zoom, clamped to the map). V1 is one island with an ocean border (camera clamped at the shore); mountains stay as terrain on the island. Player clears trees/rocks by selecting an area, builds on a grid (1 cell = 2 m): cages, hatchery/lab, roads, canteen. Dinosaurs unlock by level, guests walk the roads. Endless expansion, daily rewards. Money mainly from ads (rewarded ads first), plus small extras.
+Dinosaur park tycoon. Clash of Clans-style tilted camera (drag to pan, pinch to zoom, clamped to the map). V1 is one island: ocean on three sides, and on the south (land) side a forested mountain with the visitor tunnel where cars and guests arrive (camera from the east side, clamped to the island); mountains stay as terrain. Player clears trees/rocks by selecting an area, builds on a grid (1 cell = 2 m): cages, hatchery/lab, roads, canteen. Dinosaurs unlock by level, guests walk the roads. Endless expansion, daily rewards. Money mainly from ads (rewarded ads first), plus small extras.
 
 ## Folders
 - Assets/Models, Materials, Animations: imported art (buildings, enclosures, roads, props, characters, environment, 6 dinosaurs)

@@ -37,7 +37,8 @@ namespace DinoPark.CameraControl
             return new Rect(c.x - size.x * 0.5f, c.z - size.y * 0.5f, size.x, size.y);
         }
 
-        private void OnDrawGizmos()
+        // Only when selected: always-on lines cut across the Scene view and read as stray "blue lines".
+        private void OnDrawGizmosSelected()
         {
             DrawRect(IslandRect, new Color(0.37f, 0.61f, 0.29f, 1f));
             DrawRect(PlayableRect, new Color(0.56f, 0.8f, 0.8f, 1f));

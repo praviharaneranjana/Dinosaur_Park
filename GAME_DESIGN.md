@@ -1,9 +1,9 @@
-# Dino Park Tycoon: design decisions
+﻿# Dino Park Tycoon: design decisions
 
 Solo developer working with AI, 3-4 hours a day. Unity + Blender, models via Tripo (image-to-3D). Reference images are made in Gemini, then meshes are built in Blender.
 
 ## Scope
-**Revised 4 Nov 2026 (supersedes the 2 Nov "everything is V1" decision).** V1 is a friends-and-family playable test build: one island with an ocean border, nine species (6 land herbivores, T. rex as the only predator, Pteranodon in an aviary, Mosasaurus in a tank), babies for Triceratops/Stegosaurus/Brachiosaurus, one random event (T. rex fence stress), optional rewarded ads plus one remove-ads purchase. Everything else in the Vision list below is the roadmap, not V1.
+**Revised 4 Nov 2026 (supersedes the 2 Nov "everything is V1" decision).** V1 is a friends-and-family playable test build: one island with ocean on three sides and a mountain with the visitor tunnel on the land side (6 Nov 2026), nine species (6 land herbivores, T. rex as the only predator, Pteranodon in an aviary, Mosasaurus in a tank), babies for Triceratops/Stegosaurus/Brachiosaurus, one random event (T. rex fence stress), optional rewarded ads plus one remove-ads purchase. Everything else in the Vision list below is the roadmap, not V1.
 Full plan: `Docs/V1_PLAN.md`. Art and building rules: `Docs/DESIGN_BIBLE.md`, `Docs/BUILDING_IDENTITY.md`. What changed and why: `Docs/V2_CHANGELOG.md`.
 
 Original 2 Nov scope (kept for history): everything discussed was V1, the big-shot launch, and he may cut things depending on development and time.
@@ -34,3 +34,7 @@ Animals, roads, vehicles incl. helicopters (some buildings have helipads), labs,
 
 ## Camera (decided 4 Nov 2026)
 Tilted perspective camera (pitch 50, FOV 30), drag to pan, pinch to zoom, mouse wheel in the editor. The view is locked to the island plus an ocean margin (default 16 m): the screen can never show past the playable area, and fully zoomed out the whole island plus margin fits on screen. Island size is a placeholder (160 x 160 m = 80 x 80 cells) until the Blender island exists. Camera yaw is 0 so the grid is screen-aligned; a 45 degree diamond view would need rotated bounds and is not built.
+
+
+## Island layout and camera (6 Nov 2026)
+Three sides are ocean. The south side is land: a big forested mountain closes it, and a tunnel through it is where visitor cars and shuttles arrive (we never show where they come from). The entrance road runs from the tunnel to the plaza. The game camera looks from the east side across the island, never zoomed out to the whole map or the horizon. Built in Unity first (Dino Park > Island > Apply Polish Pass); bring the mountain and tunnel into Blender later.

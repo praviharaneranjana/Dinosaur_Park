@@ -125,6 +125,7 @@ namespace DinoPark.EditorTools
             EditorUtility.ClearProgressBar();
 
             FitBoundsAndSun(scene, group, layout, world * conv);
+            IslandPolish.Apply(scene);
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
             Debug.Log($"[DinoPark] Island imported from {layout.source} (exported {layout.exported}): " +

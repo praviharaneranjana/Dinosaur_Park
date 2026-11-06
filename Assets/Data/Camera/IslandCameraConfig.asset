@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d234e7cbcc0770c49ac02a83caec114a, type: 3}
   m_Name: IslandCameraConfig
   m_EditorClassIdentifier: DinoPark.Runtime::DinoPark.CameraControl.IslandCameraConfig
-  pitchDegrees: 50
-  yawDegrees: 0
+  pitchDegrees: 52
+  yawDegrees: -90
   verticalFov: 30
   minDistance: 18
-  absoluteMaxDistance: 600
+  absoluteMaxDistance: 215
   zoomOutPadding: 1
   zoomSmoothing: 12
   wheelSensitivity: 0.1
