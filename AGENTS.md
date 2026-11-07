@@ -1,9 +1,9 @@
-# AI Agent Directives: Dino Park Tycoon (mobile)
+﻿# AI Agent Directives: Dino Park Tycoon (mobile)
 
 Unity 6 (6000.6.7f1), URP 17.6. Target: Android first. Solo developer, so keep tasks small and end each task with "How to test".
 
 ## Game in one paragraph
-Dinosaur park tycoon. Clash of Clans-style tilted camera (drag to pan, pinch to zoom, clamped to the map). V1 is one island with an ocean border (camera clamped at the shore); mountains stay as terrain on the island. Player clears trees/rocks by selecting an area, builds on a grid (1 cell = 2 m): cages, hatchery/lab, roads, canteen. Dinosaurs unlock by level, guests walk the roads. Endless expansion, daily rewards. Money mainly from ads (rewarded ads first), plus small extras.
+Dinosaur park tycoon. Clash of Clans-style tilted camera (drag to pan, pinch to zoom, clamped to the map). V1 is one island: ocean on three sides, and on the south (land) side a forested mountain with the visitor tunnel where cars and guests arrive (camera from the east side, clamped to the island); mountains stay as terrain. Player clears trees/rocks by selecting an area, builds on a grid (1 cell = 2 m): cages, hatchery/lab, roads, canteen. Dinosaurs unlock by level, guests walk the roads. Endless expansion, daily rewards. Money mainly from ads (rewarded ads first), plus small extras.
 
 ## Folders
 - Assets/Models, Materials, Animations: imported art (buildings, enclosures, roads, props, characters, environment, 6 dinosaurs)
@@ -11,7 +11,11 @@ Dinosaur park tycoon. Clash of Clans-style tilted camera (drag to pan, pinch to 
 - Assets/Models/Trains: Kenney train kit, 103 pieces (tracks, locomotives, carriages, trams). Use for a park train ride
 - Assets/Models/Town: Downtown City MegaKit free version (modular buildings, streets, sidewalks, props). FBX in Town/FBX, textures in Town/Textures
 - Assets/Concepts: approved concept images and their prompts
-- Assets/Scripts: reusable scripts from the old prototype (bird system, wind sway, pond, visitor AI, dinosaur habit AI, doors)
+- Assets/Scripts: one assembly, `DinoPark.Runtime` (asmdef at the folder root; references Lean Touch and NaughtyAttributes). New systems go in `Assets/Scripts/<System>/` under namespace `DinoPark.<System>`. Old prototype scripts (bird system, wind sway, pond, visitor AI, dinosaur habit AI, doors; namespace `MiniGame`) live here too and are not yet data-driven
+- Assets/Scripts/CameraControl: locked island camera (`IslandCameraRig`, `IslandBounds`, `IslandCameraConfig`, pure maths in `CameraFootprintMath`)
+- Assets/Editor: editor tools. `Dino Park > Setup > Build Island Scene` rebuilds `Assets/Scenes/Island.unity` (placeholder island and ocean)
+- Assets/Data: ScriptableObject data (camera config now; dinosaurs and buildings next)
+- Assets/Tests/EditMode: NUnit tests (`DinoPark.Tests.EditMode`). Run: Window > General > Test Runner > EditMode
 - Assets/Plugins/CW: Lean Touch (touch camera). NaughtyAttributes and Colorful Hierarchy are installed too
 - .agents/rules and .agents/skills: domain rules and skills (touch, UI, ads/IAP, audio, FBX, performance, logcat, notifications)
 - _Reference: old editor scripts, Blender generation scripts and the old AGENTS file. Not compiled, read-only reference

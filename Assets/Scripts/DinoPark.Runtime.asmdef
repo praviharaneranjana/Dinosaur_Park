@@ -1,0 +1,19 @@
+{
+    "name": "DinoPark.Runtime",
+    "rootNamespace": "DinoPark",
+    "references": [
+        "LeanTouch",
+        "LeanCommon",
+        "CW.Common",
+        "NaughtyAttributes.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
