@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 
 namespace DinoPark.EditorTools
@@ -91,6 +92,66 @@ namespace DinoPark.EditorTools
                         break;
                     case "stats":
                         Stats();
+                        break;
+                    case "matfloat":   // matfloat <material asset path> <property> <value>
+                    {
+                        var mat = AssetDatabase.LoadAssetAtPath<Material>(a[1]);
+                        if (mat == null) throw new InvalidOperationException("No material " + a[1]);
+                        mat.SetFloat(a[2], F(a[3]));
+                        EditorUtility.SetDirty(mat);
+                        AssetDatabase.SaveAssets();
+                        break;
+                    }
+                    case "inspect":   // inspect <name part>: renderers, materials, shaders, queues
+                        foreach (Renderer r in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include))
+                        {
+                            if (!r.name.Contains(a[1])) continue;
+                            string mats = string.Join(", ", r.sharedMaterials.Select(m => m == null ? "null" : $"{m.name}[{m.shader.name} q{m.renderQueue}]"));
+                            var mf = r.GetComponent<MeshFilter>();
+                            Result($"  {r.name} active={r.gameObject.activeInHierarchy} enabled={r.enabled} mesh={(mf ? mf.sharedMesh?.name : "-")} pos={r.bounds.center} mats={mats}");
+                        }
+                        break;
+                    case "ray":   // ray <x> <z>: every collider / renderer bounds hit straight down
+                    {
+                        float x = F(a[1]), z = F(a[2]);
+                        foreach (RaycastHit h in Physics.RaycastAll(new Vector3(x, 300f, z), Vector3.down, 600f).OrderBy(h => -h.point.y))
+                            Result($"  collider {h.collider.name} y={h.point.y:F3}");
+                        foreach (MeshRenderer r in UnityEngine.Object.FindObjectsByType<MeshRenderer>())
+                        {
+                            Bounds b = r.bounds;
+                            if (x < b.min.x || x > b.max.x || z < b.min.z || z > b.max.z || b.size.y > 3f) continue;
+                            if (!r.name.StartsWith("ISL") && !r.name.StartsWith("Water")) continue;
+                            Result($"  flat renderer {r.name} y {b.min.y:F3}..{b.max.y:F3}");
+                        }
+                        break;
+                    }
+                    case "meshinfo":   // meshinfo <name part>: winding vs normals of meshes on scene renderers
+                        foreach (MeshFilter f in UnityEngine.Object.FindObjectsByType<MeshFilter>(FindObjectsInactive.Include))
+                        {
+                            if (!f.name.Contains(a[1]) || f.sharedMesh == null) continue;
+                            Mesh m = f.sharedMesh;
+                            Vector3[] v = m.vertices, n = m.normals;
+                            int[] t = m.triangles;
+                            float up = 0f, windingUp = 0f;
+                            for (int i = 0; i < t.Length; i += 3)
+                            {
+                                Vector3 fn = f.transform.TransformDirection(Vector3.Cross(v[t[i + 1]] - v[t[i]], v[t[i + 2]] - v[t[i]]));
+                                windingUp += Mathf.Sign(fn.y);
+                            }
+                            foreach (Vector3 nn in n) up += Mathf.Sign(f.transform.TransformDirection(nn).y);
+                            var c = m.colors;
+                            Result($"  {f.name} tris={t.Length / 3} normalsUp={up / Mathf.Max(n.Length, 1):F2} windingUp={windingUp / Mathf.Max(t.Length / 3, 1):F2} colorA avg={(c.Length > 0 ? c.Average(cc => cc.a) : -1):F3} readable={m.isReadable}");
+                        }
+                        break;
+                    case "quality":
+                        QualitySettings.SetQualityLevel(Array.IndexOf(QualitySettings.names, a[1]), true);
+                        Result("quality now " + QualitySettings.names[QualitySettings.GetQualityLevel()] + " (" + GraphicsSettings.currentRenderPipeline?.name + ")");
+                        break;
+                    case "build":
+                        BuildAndroid(a.Length > 1 && a[1] == "norun");
+                        break;
+                    case "buildrelease":   // buildrelease <apk path, may contain spaces>
+                        BuildAndroid(true, string.Join(" ", a.Skip(1)));
                         break;
                     default:
                         Result("unknown " + cmd);
@@ -203,6 +264,53 @@ namespace DinoPark.EditorTools
                 .Select(kv => $"  {kv.Key,-18} {kv.Value.n,5} renderers  {kv.Value.tris / 1000f,8:F0}k tris (full {kv.Value.full / 1000f:F0}k)"));
             Result($"stats visible: {renderers} renderers, {total / 1000f:F0}k tris after LOD/cull (full detail {totalFull / 1000f:F0}k)\n{lines}\n" +
                    $"  editor stats: {UnityEditor.UnityStats.triangles / 1000f:F0}k tris, {UnityEditor.UnityStats.drawCalls} draw calls, {UnityEditor.UnityStats.setPassCalls} setpass");
+        }
+
+        /// <summary>
+        /// Development APK of the Island scene for a USB-connected phone: switches to Android if needed,
+        /// IL2CPP + ARM64, package com.dinopark.tycoon, then installs and launches it (profiler attached)
+        /// unless "norun". Output: Builds/Android/DinoPark.apk.
+        /// </summary>
+        private static void BuildAndroid(bool noRun, string releasePath = null)
+        {
+            bool release = !string.IsNullOrEmpty(releasePath);
+            if (EditorApplication.isPlaying) throw new InvalidOperationException("Stop play mode first");
+            SaveIfDirty();
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android)
+            {
+                Result("switching platform to Android (re-imports assets)");
+                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
+            }
+            var android = UnityEditor.Build.NamedBuildTarget.Android;
+            PlayerSettings.SetApplicationIdentifier(android, "com.dinopark.tycoon");
+            PlayerSettings.SetScriptingBackend(android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+            PlayerSettings.productName = "Dino Park";
+            // Landscape only (Clash of Clans-style view); either way up.
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
+            PlayerSettings.allowedAutorotateToPortrait = false;
+            PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
+            PlayerSettings.allowedAutorotateToLandscapeLeft = true;
+            PlayerSettings.allowedAutorotateToLandscapeRight = true;
+
+            var options = new BuildPlayerOptions
+            {
+                scenes = new[] { IslandScene },
+                locationPathName = release ? releasePath : "Builds/Android/DinoPark.apk",
+                target = BuildTarget.Android,
+                targetGroup = BuildTargetGroup.Android,
+                // release: no dev console, profiler or FPS overlay (testers' build)
+                options = release ? BuildOptions.None
+                    : BuildOptions.Development | BuildOptions.ConnectWithProfiler | (noRun ? BuildOptions.None : BuildOptions.AutoRunPlayer),
+            };
+            Result("building Android APK...");
+            var report = BuildPipeline.BuildPlayer(options);
+            var s = report.summary;
+            Result($"build {s.result}: {s.totalSize / (1024f * 1024f):F0} MB in {s.totalTime.TotalMinutes:F1} min, {s.totalErrors} errors -> {s.outputPath}");
+            if (s.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+                foreach (var step in report.steps)
+                    foreach (var msg in step.messages)
+                        if (msg.type == LogType.Error || msg.type == LogType.Exception) Result("  error: " + msg.content);
         }
 
         private static float F(string s) => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture);

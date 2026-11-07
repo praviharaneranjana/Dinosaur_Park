@@ -35,10 +35,11 @@ Material:
     m_Floats:
     - _AlphaDepth: 0.9
     - _AlphaShallow: 0.22
+    - _DebugView: 0
     - _DepthRange: 1.6
     - _DriftSpeed: 0.03
     - _EdgeFoamDistance: 0.16
-    - _FlowFoam: 0.3
+    - _FlowFoam: 0.15
     - _FlowSpeed: 1.6
     - _FoamTiling: 0.35
     - _NormalStrength: 0.7

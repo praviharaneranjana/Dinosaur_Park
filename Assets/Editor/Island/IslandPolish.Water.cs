@@ -39,13 +39,13 @@ namespace DinoPark.EditorTools
             Texture2D normal = ProceduralTextures.WaterNormal;
             Texture2D foam = ProceduralTextures.Foam;
             Material river = Mat("M_Water_River", WaterShader, m => WaterBase(m, normal, foam,
-                new Color(0.30f, 0.82f, 0.76f), new Color(0.04f, 0.36f, 0.44f), 1.6f, 0.22f, 0.9f, 0.2f, 0.7f, 1.6f, 0.16f, 0.3f));
+                new Color(0.30f, 0.82f, 0.76f), new Color(0.04f, 0.36f, 0.44f), 1.6f, 0.22f, 0.9f, 0.2f, 0.7f, 1.6f, 0.16f, 0.15f));
             Material pond = Mat("M_Water_Pond", WaterShader, m => WaterBase(m, normal, foam,
                 new Color(0.28f, 0.78f, 0.74f), new Color(0.03f, 0.30f, 0.40f), 2.4f, 0.22f, 1.2f, 0.16f, 0.45f, 0.4f, 0.14f, 0.0f));
             Material mud = Mat("M_Water_Mud", WaterShader, m =>
             {
-                WaterBase(m, normal, foam, new Color(0.42f, 0.33f, 0.22f), new Color(0.22f, 0.16f, 0.10f), 0.8f, 0.75f, 0.5f, 0.3f, 0.25f, 0.2f, 0.25f, 0f);
-                m.SetColor("_FoamColor", new Color(0.62f, 0.54f, 0.42f));
+                WaterBase(m, normal, foam, new Color(0.42f, 0.33f, 0.22f), new Color(0.22f, 0.16f, 0.10f), 0.6f, 0.75f, 0.35f, 0.3f, 0.25f, 0.2f, 0.06f, 0f);
+                m.SetColor("_FoamColor", new Color(0.50f, 0.43f, 0.33f));   // wet mud rim, not white
                 m.SetFloat("_Reflectivity", 0.25f);
             });
             Material swamp = Mat("M_Water_Swamp", WaterShader, m =>

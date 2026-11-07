@@ -62,3 +62,7 @@ production/session-state/
 
 # Blender backups
 *.blend1
+
+# Device builds
+/Builds/
+/.utmp/

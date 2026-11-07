@@ -33,11 +33,12 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AlphaDepth: 0.5
+    - _AlphaDepth: 0.35
     - _AlphaShallow: 0.75
-    - _DepthRange: 0.8
+    - _DebugView: 0
+    - _DepthRange: 0.6
     - _DriftSpeed: 0.03
-    - _EdgeFoamDistance: 0.25
+    - _EdgeFoamDistance: 0.06
     - _FlowFoam: 0
     - _FlowSpeed: 0.2
     - _FoamTiling: 0.35
@@ -56,7 +57,7 @@ Material:
     - _WaveSpeed: 1
     m_Colors:
     - _DeepColor: {r: 0.22, g: 0.16, b: 0.1, a: 1}
-    - _FoamColor: {r: 0.62, g: 0.54, b: 0.42, a: 1}
+    - _FoamColor: {r: 0.5, g: 0.43, b: 0.33, a: 1}
     - _HorizonColor: {r: 0.55, g: 0.72, b: 0.86, a: 1}
     - _ShallowColor: {r: 0.42, g: 0.33, b: 0.22, a: 1}
     - _SkyColor: {r: 0.3, g: 0.52, b: 0.8, a: 1}

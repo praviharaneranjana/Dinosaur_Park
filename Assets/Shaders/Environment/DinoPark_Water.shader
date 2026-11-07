@@ -44,6 +44,7 @@ Shader "DinoPark/Environment/Water"
         _Reflectivity ("Reflectivity", Range(0, 1)) = 0.55
         _SpecPower ("Sun Spec Power", Float) = 180
         _SpecIntensity ("Sun Spec Intensity", Float) = 2.5
+        [HideInInspector] _DebugView ("Debug View (R depth, G foam, B alpha)", Float) = 0
     }
 
     SubShader
@@ -101,6 +102,7 @@ Shader "DinoPark/Environment/Water"
                 float _SpecPower;
                 float _SpecIntensity;
                 half _Ocean;
+                half _DebugView;
             CBUFFER_END
 
             TEXTURE2D(_NormalMap); SAMPLER(sampler_NormalMap);
@@ -241,7 +243,8 @@ Shader "DinoPark/Environment/Water"
                 half3 V = GetWorldSpaceNormalizeViewDir(input.positionWS);
                 half NdotL = saturate(dot(N, light.direction));
                 half3 ambient = SampleSH(N);
-                half3 lit = waterCol * (ambient * 0.8 + light.color * (0.45 + 0.55 * NdotL) * shadow);
+                // Kept at or below 1x so LDR (mobile, no HDR) does not clip water and foam to white.
+                half3 lit = waterCol * min(ambient * 0.55 + light.color * (0.35 + 0.4 * NdotL) * shadow, 1.0h);
                 half fresnel = 0.02 + 0.98 * pow(1.0 - saturate(dot(N, V)), 5.0);
                 half3 R = reflect(-V, N);
                 half3 sky = lerp(_HorizonColor.rgb, _SkyColor.rgb, saturate(R.y * 1.5));
@@ -249,7 +252,7 @@ Shader "DinoPark/Environment/Water"
                 half3 H = normalize(light.direction + V);
                 half spec = pow(saturate(dot(N, H)), _SpecPower) * _SpecIntensity * shadow;
                 col += light.color * spec * (1.0 - foam);
-                half3 foamLit = _FoamColor.rgb * (ambient * 0.6 + light.color * (0.6 + 0.4 * NdotL) * shadow);
+                half3 foamLit = _FoamColor.rgb * min(ambient * 0.45 + light.color * (0.45 + 0.25 * NdotL) * shadow, 0.95h);
                 col = lerp(col, foamLit, foam);
                 alpha = saturate(max(alpha, foam) + fresnel * 0.3);
                 #if defined(_OCEAN)
@@ -257,6 +260,7 @@ Shader "DinoPark/Environment/Water"
                 #endif
 
                 col = MixFog(col, input.fogFactor);
+                if (_DebugView > 0.5) return half4(saturate(depth * 0.5), foam, alpha, 1);
                 return half4(col, alpha);
             }
             ENDHLSL
