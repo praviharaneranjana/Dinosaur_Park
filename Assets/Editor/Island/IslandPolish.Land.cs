@@ -30,7 +30,7 @@ namespace DinoPark.EditorTools
         private static void BuildMountainAndTunnel(Ctx ctx)
         {
             Transform land = Group(ctx.Polish, "Land Side");
-            const float x0 = -320f, x1 = 320f, z0 = -360f, z1 = -118f, step = 2.5f;
+            const float x0 = -320f, x1 = 320f, z0 = -360f, z1 = -118f, step = 4f;
             int nx = Mathf.RoundToInt((x1 - x0) / step) + 1, nz = Mathf.RoundToInt((z1 - z0) / step) + 1;
             var verts = new Vector3[nx * nz];
             for (int j = 0; j < nz; j++)

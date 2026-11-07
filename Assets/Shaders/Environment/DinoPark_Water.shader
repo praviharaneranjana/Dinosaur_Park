@@ -158,7 +158,7 @@ Shader "DinoPark/Environment/Water"
                     float3 q = p;
                     q += Gerstner(wd, 0.16 * amp, 22.0, p, t, tangent, binormal);
                     q += Gerstner(wd2, 0.12 * amp, 11.0, p, t, tangent, binormal);
-                    q += Gerstner(wd3, 0.08 * amp, 5.5, p, t, tangent, binormal);
+                    q += Gerstner(wd3, 0.08 * amp, 8.0, p, t, tangent, binormal);
                     p = q;
                     n = normalize(cross(binormal, tangent));
                 #endif

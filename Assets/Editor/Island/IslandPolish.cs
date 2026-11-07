@@ -104,6 +104,7 @@ namespace DinoPark.EditorTools
                 ("Ocean", BuildOcean),
                 ("Traffic", BuildTraffic),
                 ("Camera", ConfigureCamera),
+                ("Mobile optimization", OptimizeForMobile),
             };
             try
             {

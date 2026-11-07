@@ -584,8 +584,8 @@ namespace DinoPark.EditorTools
                 tempCollider = seabed.AddComponent<MeshCollider>();
             Physics.SyncTransforms();
 
-            List<float> xs = Axis(-560f, 560f, -190f, 175f, 2f, 14f);
-            List<float> zs = Axis(-430f, 560f, -215f, 200f, 2f, 14f);
+            List<float> xs = Axis(-560f, 560f, -190f, 175f, 3f, 24f);
+            List<float> zs = Axis(-430f, 560f, -215f, 200f, 3f, 24f);
             int nx = xs.Count, nz = zs.Count;
             var verts = new Vector3[nx * nz];
             var depth = new float[nx * nz];

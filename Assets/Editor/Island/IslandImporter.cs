@@ -377,7 +377,8 @@ namespace DinoPark.EditorTools
             var ti = (TextureImporter)assetImporter;
             ti.sRGBTexture = true;
             ti.mipmapEnabled = true;
-            if (assetPath.Contains("Ground"))
+            bool ground = assetPath.Contains("Ground");
+            if (ground)
             {
                 ti.maxTextureSize = 4096;
                 ti.wrapMode = TextureWrapMode.Clamp;
@@ -389,6 +390,14 @@ namespace DinoPark.EditorTools
                 ti.mipMapsPreserveCoverage = true;
                 ti.alphaTestReferenceValue = 0.4f;
             }
+
+            // Phones: ASTC 6x6 (about 3.6 bits per pixel), ground halved to 2048.
+            TextureImporterPlatformSettings android = ti.GetPlatformTextureSettings("Android");
+            android.overridden = true;
+            android.maxTextureSize = ground ? 2048 : 512;
+            android.format = TextureImporterFormat.ASTC_6x6;
+            android.textureCompression = TextureImporterCompression.Compressed;
+            ti.SetPlatformTextureSettings(android);
         }
     }
 }

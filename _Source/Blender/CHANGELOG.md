@@ -60,3 +60,9 @@
 - Wind sway on all plant materials (WindSettings component).
 - Land side: south mountain range with forest, concrete tunnel portal + interior, asphalt road to the plaza, looping visitor cars (VehicleTraffic). Camera from the east (yaw -90, pitch 52, max 215 m). URP depth texture on.
 - To do in Blender later: mountain + tunnel, proper river bed depth, pond outlines (stair-step edges), mobile LODs for trees.
+
+## 2026-11-07 - Island mobile pass (Unity)
+- New last polish step (IslandPolish.Mobile.cs): every plant and rock prefab keeps its full mesh as LOD0 and gets LOD1/LOD2 child meshes made with Unity's MeshLodUtility, switched by a LODGroup (LOD0 > 30% screen, LOD1 > 10%); items under ~1.6 m are culled below 1.4% screen, under ~3.5 m below 0.7%, and both stop casting shadows. Runtime Mesh LOD alone did not draw these multi-material meshes, hence the plain child meshes.
+- Ocean grid 3 m inner / 24 m outer (was 2 / 14), mountain grid 4 m (was 2.5), shortest ocean wave 8 m.
+- Android texture overrides: ASTC 6x6, ground 2048, others 512. Mobile URP asset: HDR off, MSAA off.
+- Measured at the start camera (automation `stats`): 6.5M -> 1.44M triangles in view. Draw calls still ~2,900 (editor count incl. shadows): next step is GPU Resident Drawer / fewer separate plant objects.

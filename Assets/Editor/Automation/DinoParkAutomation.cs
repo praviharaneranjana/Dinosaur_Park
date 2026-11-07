@@ -89,6 +89,9 @@ namespace DinoPark.EditorTools
                     case "shot":
                         Shot(a);
                         break;
+                    case "stats":
+                        Stats();
+                        break;
                     default:
                         Result("unknown " + cmd);
                         return;
@@ -149,6 +152,57 @@ namespace DinoPark.EditorTools
             rt.Release();
             UnityEngine.Object.DestroyImmediate(rt);
             if (temp != null) UnityEngine.Object.DestroyImmediate(temp);
+        }
+
+        /// <summary>
+        /// Rendering cost of what the main camera sees: triangles and renderers inside its frustum, split by
+        /// group, counted at the mesh LOD that Unity would pick (distance-culled LODGroups skipped), plus
+        /// the editor's own last-frame stats.
+        /// </summary>
+        private static void Stats()
+        {
+            Camera cam = Camera.main;
+            if (cam == null) throw new InvalidOperationException("No main camera");
+            Plane[] planes = GeometryUtility.CalculateFrustumPlanes(cam);
+            var byGroup = new System.Collections.Generic.Dictionary<string, (int n, long tris, long full)>();
+            long total = 0, totalFull = 0;
+            int renderers = 0;
+            foreach (MeshRenderer r in UnityEngine.Object.FindObjectsByType<MeshRenderer>())
+            {
+                if (!r.enabled || !r.gameObject.activeInHierarchy) continue;
+                if (!GeometryUtility.TestPlanesAABB(planes, r.bounds)) continue;
+                var mf = r.GetComponent<MeshFilter>();
+                if (mf == null || mf.sharedMesh == null) continue;
+                Mesh m = mf.sharedMesh;
+                long full = m.triangles.Length / 3;
+                long tris = full;
+                // culled by a LODGroup?
+                var lg = r.GetComponentInParent<LODGroup>();
+                float dist = Vector3.Distance(cam.transform.position, r.bounds.center);
+                float size = r.bounds.size.magnitude * 0.5f;
+                float screen = size / (Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * 2f * Mathf.Max(dist, 0.1f));
+                if (lg != null && lg.lodCount > 0)
+                {
+                    // only the renderers of the LOD level that would be active count; below the last level = culled
+                    LOD[] lods = lg.GetLODs();
+                    float s = lg.size * Mathf.Max(lg.transform.lossyScale.x, lg.transform.lossyScale.y, lg.transform.lossyScale.z);
+                    float gd = Vector3.Distance(cam.transform.position, lg.transform.TransformPoint(lg.localReferencePoint));
+                    float gscreen = s / (2f * Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * Mathf.Max(gd, 0.1f));
+                    int active = -1;
+                    for (int l = 0; l < lods.Length; l++) if (gscreen >= lods[l].screenRelativeTransitionHeight) { active = l; break; }
+                    if (active < 0 || !lods[active].renderers.Contains(r)) continue;
+                }
+                tris = m.triangles.Length / 3;
+                string g = r.transform.parent != null ? r.transform.parent.name : "root";
+                if (r.transform.parent != null && r.transform.parent.parent != null && r.transform.parent.parent.name.StartsWith("--- Island")) g = r.transform.parent.name;
+                byGroup.TryGetValue(g, out var cur);
+                byGroup[g] = (cur.n + 1, cur.tris + tris, cur.full + full);
+                total += tris; totalFull += full; renderers++;
+            }
+            string lines = string.Join("\n", byGroup.OrderByDescending(kv => kv.Value.tris)
+                .Select(kv => $"  {kv.Key,-18} {kv.Value.n,5} renderers  {kv.Value.tris / 1000f,8:F0}k tris (full {kv.Value.full / 1000f:F0}k)"));
+            Result($"stats visible: {renderers} renderers, {total / 1000f:F0}k tris after LOD/cull (full detail {totalFull / 1000f:F0}k)\n{lines}\n" +
+                   $"  editor stats: {UnityEditor.UnityStats.triangles / 1000f:F0}k tris, {UnityEditor.UnityStats.drawCalls} draw calls, {UnityEditor.UnityStats.setPassCalls} setpass");
         }
 
         private static float F(string s) => float.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
