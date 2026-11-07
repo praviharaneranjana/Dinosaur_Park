@@ -309,7 +309,8 @@ namespace CW.Common
 		public static float GetMouseWheelDelta()
 		{
 #if USE_NEW_INPUT_SYSTEM
-			return UnityEngine.InputSystem.Mouse.current.scroll != null ? UnityEngine.InputSystem.Mouse.current.scroll.ReadValue().y : 0.0f;
+			// DinoPark patch: phones have no mouse (Mouse.current is null); the original threw every frame.
+			return UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.scroll != null ? UnityEngine.InputSystem.Mouse.current.scroll.ReadValue().y : 0.0f;
 #else
 			return UnityEngine.Input.mouseScrollDelta.y;
 #endif

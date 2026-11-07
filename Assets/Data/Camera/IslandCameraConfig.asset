@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d234e7cbcc0770c49ac02a83caec114a, type: 3}
+  m_Name: IslandCameraConfig
+  m_EditorClassIdentifier: DinoPark.Runtime::DinoPark.CameraControl.IslandCameraConfig
+  pitchDegrees: 52
+  yawDegrees: -90
+  verticalFov: 30
+  minDistance: 18
+  absoluteMaxDistance: 215
+  zoomOutPadding: 1
+  zoomSmoothing: 12
+  wheelSensitivity: 0.1
+  panDamping: 6
+  maxPanSpeed: 150
+  edgeContainment: 1
