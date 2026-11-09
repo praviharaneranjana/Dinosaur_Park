@@ -264,6 +264,7 @@ namespace DinoPark.EditorTools
         private static void BuildEntrance(Ctx ctx)
         {
             if (ctx.EntranceProfile == null) return;
+            AssetDatabase.DeleteAsset($"{MaterialFolder}/M_Sign_Letters.mat");   // from the TextMesh sign, replaced by block letters
             Transform gate = Group(ctx.Polish, "Entrance Gate");
             DistToPath(new Vector3(0f, 0f, GateZ), ctx.EntranceProfile, out _, out float gy);
             gy += 0.1f;
@@ -339,6 +340,10 @@ namespace DinoPark.EditorTools
                 }
             }
 
+            // sign lettering: raised block letters on both faces (geometry, so no font atlas is needed)
+            for (int s = -1; s <= 1; s += 2)
+                BlockText("DINO PARK", new Vector3(0f, gy + 6.75f, GateZ + s * 0.19f), s < 0 ? 1f : -1f, 0.2f, Steel, v, c, t);
+
             var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
             mesh.SetVertices(v);
             mesh.SetColors(c);
@@ -353,40 +358,6 @@ namespace DinoPark.EditorTools
                 m.SetFloat("_Cull", (float)CullMode.Back);
             });
             MeshObject("Gate", gate, SaveMesh(mesh, "Entrance_Gate"), new[] { mat }, true);
-
-            // sign lettering, both faces
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            // The default font shader ignores depth, so both faces drew over each other: use a
-            // depth-tested, back-face-culled cutout so each face shows only its own lettering.
-            Material letters = Mat("M_Sign_Letters", "Universal Render Pipeline/Unlit", m =>
-            {
-                m.SetTexture("_BaseMap", font.material.mainTexture);
-                m.SetColor("_BaseColor", Steel);
-                m.SetFloat("_AlphaClip", 1f);
-                m.SetFloat("_Cutoff", 0.5f);
-                m.EnableKeyword("_ALPHATEST_ON");
-                m.SetFloat("_Cull", (float)CullMode.Back);
-                m.SetOverrideTag("RenderType", "TransparentCutout");
-                m.renderQueue = (int)RenderQueue.AlphaTest;
-            });
-            for (int s = -1; s <= 1; s += 2)
-            {
-                var go = new GameObject(s < 0 ? "Sign_South" : "Sign_North");
-                go.transform.SetParent(gate, false);
-                go.transform.SetPositionAndRotation(new Vector3(0f, gy + 6.75f, GateZ + s * 0.17f), Quaternion.Euler(0f, s < 0 ? 180f : 0f, 0f));
-                var tm = go.AddComponent<TextMesh>();
-                tm.text = "DINO PARK";
-                tm.font = font;
-                tm.fontSize = 128;
-                tm.characterSize = 0.13f;
-                tm.fontStyle = FontStyle.Bold;
-                tm.anchor = TextAnchor.MiddleCenter;
-                tm.alignment = TextAlignment.Center;
-                tm.color = Steel;
-                var r = go.GetComponent<MeshRenderer>();
-                r.sharedMaterial = letters;
-                r.shadowCastingMode = ShadowCastingMode.Off;
-            }
 
             // nothing from the island may stand in the gate, the forecourt or the wall line
             int hidden = 0;
@@ -408,6 +379,52 @@ namespace DinoPark.EditorTools
                 }
             }
             ctx.Log.Add($"Entrance: gate at z {GateZ} (y {gy:F2}), {wallSegments} wall segments, {lamps} lamps, {hidden} island plants/props cleared");
+        }
+
+        /// <summary>5x7 block glyphs (rows top to bottom) for the gate sign.</summary>
+        private static readonly Dictionary<char, string[]> Glyphs = new Dictionary<char, string[]>
+        {
+            ['D'] = new[] { "11110", "10001", "10001", "10001", "10001", "10001", "11110" },
+            ['I'] = new[] { "11111", "00100", "00100", "00100", "00100", "00100", "11111" },
+            ['N'] = new[] { "10001", "11001", "10101", "10101", "10011", "10001", "10001" },
+            ['O'] = new[] { "01110", "10001", "10001", "10001", "10001", "10001", "01110" },
+            ['P'] = new[] { "11110", "10001", "10001", "11110", "10000", "10000", "10000" },
+            ['A'] = new[] { "01110", "10001", "10001", "11111", "10001", "10001", "10001" },
+            ['R'] = new[] { "11110", "10001", "10001", "11110", "10100", "10010", "10001" },
+            ['K'] = new[] { "10001", "10010", "10100", "11000", "10100", "10010", "10001" },
+        };
+
+        /// <summary>
+        /// Raised block text centred on <paramref name="centre"/> in the XY plane. <paramref name="readSign"/> = 1 reads
+        /// left-to-right along +X (seen from -Z), -1 along -X (seen from +Z). Horizontal runs merge into one box.
+        /// </summary>
+        private static void BlockText(string text, Vector3 centre, float readSign, float cell, Color col, List<Vector3> v, List<Color> c, List<int> t)
+        {
+            int width = 0;
+            for (int i = 0; i < text.Length; i++) width += (text[i] == ' ' ? 3 : 5) + (i < text.Length - 1 && text[i] != ' ' && text[i + 1] != ' ' ? 1 : 0);
+            float x = -width * cell * 0.5f;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char ch = text[i];
+                if (Glyphs.TryGetValue(ch, out string[] rows))
+                {
+                    for (int r = 0; r < 7; r++)
+                    {
+                        int k = 0;
+                        while (k < 5)
+                        {
+                            if (rows[r][k] != '1') { k++; continue; }
+                            int run = k;
+                            while (run < 5 && rows[r][run] == '1') run++;
+                            float cx = x + (k + run) * 0.5f * cell;
+                            float cy = (3f - r) * cell;
+                            AddBox(v, c, t, centre + new Vector3(cx * readSign, cy, 0f), new Vector3((run - k) * cell, cell, 0.08f), Quaternion.identity, col);
+                            k = run;
+                        }
+                    }
+                }
+                x += (ch == ' ' ? 3 : 5) * cell + (i < text.Length - 1 && ch != ' ' && text[i + 1] != ' ' ? cell : 0f);
+            }
         }
 
         private static void AddBox(List<Vector3> v, List<Color> c, List<int> t, Vector3 centre, Vector3 size, Quaternion rot, Color col)

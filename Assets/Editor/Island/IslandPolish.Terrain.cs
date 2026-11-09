@@ -74,13 +74,16 @@ namespace DinoPark.EditorTools
                 float y0 = w.y, y = y0;
                 // The headland neck joins the mainland: where the mainland is higher, sink the island ground
                 // (its texture is painted seabed there) under it so the mainland mesh shows instead.
+                bool sunk = false;
                 if (w.z < -90f)
                 {
                     float main = MainlandRaw(w.x, w.z);
-                    if (main > y) y = main - 0.3f;
+                    if (main > y) { y = main - 0.3f; sunk = true; }
                 }
+                float under = y;
                 y = Flatten(w, y, ramp, RampHalfWidth, RampShoulder);
                 y = Flatten(w, y, road, RoadHalfWidth, RoadShoulder);
+                if (sunk) y = Mathf.Min(y, under);   // stays below the mainland, which carries the road verge there
                 if (!Mathf.Approximately(y, y0))
                 {
                     w.y = y;
