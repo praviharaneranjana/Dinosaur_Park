@@ -80,6 +80,13 @@ namespace DinoPark.EditorTools
                     float main = MainlandRaw(w.x, w.z);
                     if (main > y) { y = main - 0.3f; sunk = true; }
                 }
+                // Beaches were a flat shelf within a few cm of sea level, so sea and sand z-fought into a
+                // sawtooth shoreline. Steepen the profile through the waterline (blended out by +-1.2 m).
+                if (!sunk)
+                {
+                    float d = y - SeaLevel, ad = Mathf.Abs(d);
+                    if (ad < 1.2f) y = SeaLevel + d + 0.3f * (float)System.Math.Tanh(d / 0.12f) * (1f - Mathf.SmoothStep(0.6f, 1.2f, ad));
+                }
                 float under = y;
                 y = Flatten(w, y, ramp, RampHalfWidth, RampShoulder);
                 y = Flatten(w, y, road, RoadHalfWidth, RoadShoulder);
