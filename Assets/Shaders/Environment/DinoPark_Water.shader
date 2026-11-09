@@ -156,7 +156,9 @@ Shader "DinoPark/Environment/Water"
                 float3 n = TransformObjectToWorldNormal(input.normalOS);
                 #if defined(_OCEAN)
                     float depth = input.color.r * _VertexDepthMax;
-                    float amp = _WaveAmp * saturate(depth / 7.0) * input.color.a;
+                    // Flat in the last 1.5 m of depth: big tilted triangles there cut the sand along straight
+                    // lines (a sawtooth shoreline). The beach swash sheet does the moving water instead.
+                    float amp = _WaveAmp * saturate((depth - 1.5) / 6.0) * input.color.a;
                     float t = _Time.y * _WaveSpeed;
                     float2 wd = normalize(_WaveDir.xz + 1e-4);
                     float2 wd2 = float2(wd.x * 0.8 - wd.y * 0.6, wd.x * 0.6 + wd.y * 0.8);
