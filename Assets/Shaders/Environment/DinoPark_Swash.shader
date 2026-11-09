@@ -107,9 +107,9 @@ Shader "DinoPark/Environment/Swash"
                 float front = _RunUp * max(Surge(c1), 0.55 * Surge(c2));
 
                 half cover = 1.0 - smoothstep(front - 0.02, front + 0.02, h);           // 1 where the swash is
-                half line = cover * smoothstep(front - 0.10, front, h);                 // foam at the front
+                half frontLine = cover * smoothstep(front - 0.10, front, h);                 // foam at the front
                 half foamTex = SAMPLE_TEXTURE2D(_FoamTex, sampler_FoamTex, w * _FoamTiling + float2(t * 0.03, t * 0.02)).r;
-                half foam = saturate(line * (0.7 + foamTex) + cover * foamTex * 0.3);
+                half foam = saturate(frontLine * (0.7 + foamTex) + cover * foamTex * 0.3);
 
                 // wet sand: below the highest recent run-up, fading as it dries
                 half wet = (1.0 - cover) * (1.0 - smoothstep(0.0, _RunUp, h)) * _WetColor.a;
