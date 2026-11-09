@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_Mountain
+  m_Name: M_Entrance
   m_Shader: {fileID: 4800000, guid: 481e2ea9aeb03cf4ca3fe03772bea1bb, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -38,14 +38,14 @@ Material:
     - _AlphaClip: 0
     - _Cull: 2
     - _Cutoff: 0.5
-    - _DetailStrength: 0.75
-    - _DetailTiling: 0.12
+    - _DetailStrength: 0.18
+    - _DetailTiling: 0.5
     - _DstBlend: 0
-    - _MossAmount: 0.15
-    - _Smoothness: 0.08
+    - _MossAmount: 0
+    - _Smoothness: 0.18
     - _SrcBlend: 1
-    - _StrataHeight: 3.2
-    - _StrataStrength: 0.22
+    - _StrataHeight: 1.6
+    - _StrataStrength: 0
     - _Transparent: 0
     - _Triplanar: 1
     - _UseMapColor: 1
@@ -54,6 +54,6 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _MossColor: {r: 0.33, g: 0.48, b: 0.2, a: 1}
+    - _MossColor: {r: 0.31999996, g: 0.4699999, b: 0.17999998, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

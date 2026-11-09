@@ -324,9 +324,10 @@ namespace DinoPark.EditorTools
 
             // street lamps down the park road
             int lamps = 0;
-            foreach (Vector3 p in ctx.EntranceProfile)
+            for (int li = 0; li < ctx.EntranceProfile.Count; li += 9)
             {
-                if (Mathf.RoundToInt(p.z - HighwayZ) % 20 != 0 || p.z < HighwayZ + 16f || p.z > -84f || Mathf.Abs(p.z - GateZ) < 9f) continue;
+                Vector3 p = ctx.EntranceProfile[li];
+                if (p.z < HighwayZ + 16f || p.z > -84f || Mathf.Abs(p.z - GateZ) < 9f) continue;
                 for (int s = -1; s <= 1; s += 2)
                 {
                     float lx = s * (ParkRoadHalfWidth + 1.6f);
@@ -358,7 +359,7 @@ namespace DinoPark.EditorTools
             {
                 var go = new GameObject(s < 0 ? "Sign_South" : "Sign_North");
                 go.transform.SetParent(gate, false);
-                go.transform.SetPositionAndRotation(new Vector3(0f, gy + 6.75f, GateZ + s * 0.17f), Quaternion.Euler(0f, s < 0 ? 0f : 180f, 0f));
+                go.transform.SetPositionAndRotation(new Vector3(0f, gy + 6.75f, GateZ + s * 0.17f), Quaternion.Euler(0f, s < 0 ? 180f : 0f, 0f));
                 var tm = go.AddComponent<TextMesh>();
                 tm.text = "DINO PARK";
                 tm.font = font;
