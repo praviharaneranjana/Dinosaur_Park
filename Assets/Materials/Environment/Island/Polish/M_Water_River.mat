@@ -33,17 +33,17 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AlphaDepth: 0.9
-    - _AlphaShallow: 0.22
+    - _AlphaDepth: 1.2
+    - _AlphaShallow: 0.25
     - _DebugView: 0
-    - _DepthRange: 1.6
+    - _DepthRange: 2.2
     - _DriftSpeed: 0.03
-    - _EdgeFoamDistance: 0.16
-    - _FlowFoam: 0.15
+    - _EdgeFoamDistance: 0.22
+    - _FlowFoam: 0.08
     - _FlowSpeed: 1.6
     - _FoamTiling: 0.35
-    - _NormalStrength: 0.7
-    - _NormalTiling: 0.2
+    - _NormalStrength: 0.45
+    - _NormalTiling: 0.18
     - _Ocean: 0
     - _Reflectivity: 0.35
     - _SpecIntensity: 1.6
@@ -52,14 +52,15 @@ Material:
     - _SurfRange: 3.5
     - _SurfSpeed: 1.4
     - _SurfStrength: 0.8
+    - _UseFadeUV: 0
     - _VertexDepthMax: 4
     - _WaveAmp: 1
     - _WaveSpeed: 1
     m_Colors:
-    - _DeepColor: {r: 0.04, g: 0.36, b: 0.44, a: 1}
+    - _DeepColor: {r: 0.03, g: 0.27, b: 0.43, a: 1}
     - _FoamColor: {r: 0.95, g: 0.97999996, b: 1, a: 1}
     - _HorizonColor: {r: 0.55, g: 0.72, b: 0.86, a: 1}
-    - _ShallowColor: {r: 0.3, g: 0.82, b: 0.76, a: 1}
+    - _ShallowColor: {r: 0.26, g: 0.86, b: 0.8, a: 1}
     - _SkyColor: {r: 0.3, g: 0.52, b: 0.8, a: 1}
     - _WaveDir: {r: 0.3, g: 0, b: -1, a: 0}
   m_BuildTextureStacks: []

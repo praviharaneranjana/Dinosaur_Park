@@ -53,6 +53,7 @@ Material:
     - _SurfRange: 4.5
     - _SurfSpeed: 1.3
     - _SurfStrength: 0.85
+    - _UseFadeUV: 0
     - _VertexDepthMax: 40
     - _WaveAmp: 1
     - _WaveSpeed: 1

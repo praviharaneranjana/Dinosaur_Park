@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4559334129489037310}
   - component: {fileID: 2193050875058167465}
   - component: {fileID: 4749945969179898053}
-  - component: {fileID: 5577972632616237520}
+  - component: {fileID: 782596406629713891}
   m_Layer: 0
   m_Name: PLN_Cycad_Small
   m_TagString: Untagged
@@ -93,7 +93,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!205 &5577972632616237520
+--- !u!205 &782596406629713891
 LODGroup:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
