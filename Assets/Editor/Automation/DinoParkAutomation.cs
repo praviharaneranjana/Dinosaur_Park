@@ -102,6 +102,20 @@ namespace DinoPark.EditorTools
                         AssetDatabase.SaveAssets();
                         break;
                     }
+                    case "pick":   // pick x y z pitch yaw fov px py: renderers whose bounds the ray through pixel (px,py) of a 1600x900 shot hits, nearest first
+                    {
+                        Quaternion rot = Quaternion.Euler(F(a[4]), F(a[5]), 0f);
+                        float fov = F(a[6]) * Mathf.Deg2Rad, aspect = 1600f / 900f;
+                        float nx = (F(a[7]) / 1600f) * 2f - 1f, ny = 1f - (F(a[8]) / 900f) * 2f;
+                        float th = Mathf.Tan(fov * 0.5f);
+                        var ray = new Ray(new Vector3(F(a[1]), F(a[2]), F(a[3])), rot * new Vector3(nx * th * aspect, ny * th, 1f).normalized);
+                        var hits = new List<(float d, Renderer r)>();
+                        foreach (Renderer r in UnityEngine.Object.FindObjectsByType<Renderer>())
+                            if (r.enabled && r.gameObject.activeInHierarchy && r.bounds.IntersectRay(ray, out float d)) hits.Add((d, r));
+                        foreach (var h in hits.OrderBy(h => h.d).Take(8))
+                            Result($"  hit {h.r.name} parent={h.r.transform.parent?.name} d={h.d:F1} bounds={h.r.bounds.center} size={h.r.bounds.size} mat={h.r.sharedMaterial?.name}");
+                        break;
+                    }
                     case "active":   // active <exact object name> <0|1>: show/hide every scene object with that name (not saved)
                         foreach (Transform t in UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
                             if (t.name == a[1]) t.gameObject.SetActive(a[2] == "1");
