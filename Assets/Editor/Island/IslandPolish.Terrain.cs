@@ -72,7 +72,13 @@ namespace DinoPark.EditorTools
             {
                 Vector3 w = gt.TransformPoint(v[i]);
                 float y0 = w.y, y = y0;
-                if (w.z < -90f) y = Mathf.Max(y, MainlandRaw(w.x, w.z));   // the headland neck joins the mainland
+                // The headland neck joins the mainland: where the mainland is higher, sink the island ground
+                // (its texture is painted seabed there) under it so the mainland mesh shows instead.
+                if (w.z < -90f)
+                {
+                    float main = MainlandRaw(w.x, w.z);
+                    if (main > y) y = main - 0.3f;
+                }
                 y = Flatten(w, y, ramp, RampHalfWidth, RampShoulder);
                 y = Flatten(w, y, road, RoadHalfWidth, RoadShoulder);
                 if (!Mathf.Approximately(y, y0))
