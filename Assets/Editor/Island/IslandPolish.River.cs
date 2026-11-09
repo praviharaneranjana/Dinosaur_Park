@@ -80,6 +80,7 @@ namespace DinoPark.EditorTools
             var index = new int[nx * nz];
             var verts = new List<Vector3>();
             var cols = new List<Color>();
+            var fades = new List<Vector2>();
             Vector3 start = pts[0], outFlow = (pts[Mathf.Min(6, n - 1)] - pts[0]);
             for (int j = 0; j < nz; j++)
             for (int i = 0; i < nx; i++)
@@ -97,6 +98,9 @@ namespace DinoPark.EditorTools
                 if (inPool && inRiver && arc <= 3f) wl = Mathf.Max(wlR, poolY);
                 float depth = wl - g;
                 if (depth < -0.7f) continue;
+                // fade out where the river runs into the sea, so the ocean takes over without an edge
+                float fade = inPool && !(inRiver && dR < half) ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (arc - (origLen - 18f)) / 28f);
+                if (fade <= 0.001f) continue;
 
                 Vector2 flowDir;
                 float speed;
@@ -118,6 +122,7 @@ namespace DinoPark.EditorTools
                 index[j * nx + i] = verts.Count;
                 verts.Add(new Vector3(x, wl, z));
                 cols.Add(new Color(flowDir.x * 0.5f + 0.5f, flowDir.y * 0.5f + 0.5f, speed, Mathf.Clamp(depth, 0f, RiverDepthMax) / RiverDepthMax));
+                fades.Add(new Vector2(fade, 0f));
             }
             var tris = new List<int>();
             for (int j = 0; j < nz - 1; j++)
@@ -132,10 +137,17 @@ namespace DinoPark.EditorTools
             var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
             mesh.SetVertices(verts);
             mesh.SetColors(cols);
+            mesh.SetUVs(0, fades);
             mesh.SetTriangles(tris, 0);
             mesh.SetNormals(Enumerable.Repeat(Vector3.up, verts.Count).ToList());
             mesh.RecalculateBounds();
-            MeshObject("River", parent, SaveMesh(mesh, "Water_River"), new[] { mat }, false, ShadowCastingMode.Off);
+            Material main = Mat("M_Water_RiverMain", WaterShader, m =>
+            {
+                m.CopyPropertiesFromMaterial(mat);
+                m.SetFloat("_UseFadeUV", 1f);
+                m.renderQueue = mat.renderQueue;
+            });
+            MeshObject("River", parent, SaveMesh(mesh, "Water_River"), new[] { main }, false, ShadowCastingMode.Off);
             if (pool != null) pool.SetActive(false);
 
             int cleared = ClearChannel(ctx, pts, WidthAt);

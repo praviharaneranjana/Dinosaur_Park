@@ -6,6 +6,7 @@
 //               scrolling of normals and foam; bank foam from A.
 // Both: foam where the surface meets geometry (shoreline, rocks, banks) from the camera depth texture,
 // sun specular, sky fresnel and receive main-light shadows.
+// _UseFadeUV = 1: alpha is multiplied by uv0.x (0..1), so a river can fade out where it meets the sea.
 Shader "DinoPark/Environment/Water"
 {
     Properties
@@ -44,6 +45,7 @@ Shader "DinoPark/Environment/Water"
         _Reflectivity ("Reflectivity", Range(0, 1)) = 0.55
         _SpecPower ("Sun Spec Power", Float) = 180
         _SpecIntensity ("Sun Spec Intensity", Float) = 2.5
+        [Toggle] _UseFadeUV ("Fade Alpha By UV0.x (river mouth)", Float) = 0
         [HideInInspector] _DebugView ("Debug View (R depth, G foam, B alpha)", Float) = 0
     }
 
@@ -103,6 +105,7 @@ Shader "DinoPark/Environment/Water"
                 float _SpecIntensity;
                 half _Ocean;
                 half _DebugView;
+                half _UseFadeUV;
             CBUFFER_END
 
             TEXTURE2D(_NormalMap); SAMPLER(sampler_NormalMap);
@@ -113,6 +116,7 @@ Shader "DinoPark/Environment/Water"
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
                 half4 color : COLOR;
+                float2 uv : TEXCOORD0;      // x = fade 0..1 when _UseFadeUV is on
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -124,6 +128,7 @@ Shader "DinoPark/Environment/Water"
                 half4 color : TEXCOORD2;
                 float eyeDepth : TEXCOORD3;
                 half fogFactor : TEXCOORD4;
+                half fade : TEXCOORD5;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -169,6 +174,7 @@ Shader "DinoPark/Environment/Water"
                 o.positionCS = TransformWorldToHClip(p);
                 o.eyeDepth = -TransformWorldToView(p).z;
                 o.color = input.color;
+                o.fade = lerp(1.0h, (half)input.uv.x, _UseFadeUV);
                 o.fogFactor = ComputeFogFactor(o.positionCS.z);
                 return o;
             }
@@ -258,6 +264,7 @@ Shader "DinoPark/Environment/Water"
                 #if defined(_OCEAN)
                     alpha *= input.color.a;
                 #endif
+                alpha *= input.fade;
 
                 col = MixFog(col, input.fogFactor);
                 if (_DebugView > 0.5) return half4(saturate(depth * 0.5), foam, alpha, 1);
