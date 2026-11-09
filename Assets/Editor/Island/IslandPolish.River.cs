@@ -100,6 +100,8 @@ namespace DinoPark.EditorTools
                 if (depth < -0.7f) continue;
                 // fade out where the river runs into the sea, so the ocean takes over without an edge
                 float fade = inPool && !(inRiver && dR < half) ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (arc - (origLen - 18f)) / 28f);
+                // where low ground (the sea floor at the mouth) lets the water reach the edge of the river band, feather it out sideways
+                if (!inPool) fade *= 1f - Mathf.SmoothStep(0f, 1f, (dR - half - 3f) / 6.5f);
                 if (fade <= 0.001f) continue;
 
                 Vector2 flowDir;
