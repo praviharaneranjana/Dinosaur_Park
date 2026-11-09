@@ -17,6 +17,7 @@ Shader "DinoPark/Environment/Swash"
         _WetColor ("Wet Sand (rgb, a = strength)", Color) = (0.30, 0.24, 0.16, 0.35)
         [Header(Waves)]
         _RunUp ("Run Up (m above sea)", Float) = 0.5
+        _LipAlpha ("Waterline Lip Opacity", Range(0, 1)) = 0.85
         _Period ("Wave Period (s)", Float) = 7
         _PhaseScale ("Phase Variation Along Shore", Float) = 1.6
         [Header(Encoding)]
@@ -52,6 +53,7 @@ Shader "DinoPark/Environment/Swash"
                 half4 _FoamColor;
                 half4 _WetColor;
                 float _RunUp;
+                half _LipAlpha;
                 float _Period;
                 float _PhaseScale;
                 float _HeightRange;
@@ -117,7 +119,12 @@ Shader "DinoPark/Environment/Swash"
                 half3 water = lerp(_WaterColor.rgb, _FoamColor.rgb, foam);
                 half3 col = lerp(_WetColor.rgb, water, cover);
                 half alpha = max(cover * lerp(0.35h, 0.95h, foam), wet);
-                alpha *= smoothstep(-0.12, 0.03, h) * input.color.a;                  // the ocean takes over below sea level
+                // Waterline lip: nearly opaque shallow water right at sea level, so the ocean's edge (cut along
+                // the coarse ground triangles, a zigzag) is hidden under this finer, smooth sheet.
+                half lip = (1.0 - smoothstep(-0.02, 0.14, h)) * _LipAlpha;
+                col = lerp(col, _WaterColor.rgb, lip * (1.0 - foam));
+                alpha = max(alpha, lip);
+                alpha *= smoothstep(-0.55, -0.18, h) * input.color.a;                 // deeper down, the ocean takes over
 
                 Light light = GetMainLight();
                 half NdotL = saturate(dot(normalize(input.normalWS), light.direction));
