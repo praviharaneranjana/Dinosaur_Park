@@ -113,6 +113,7 @@ namespace DinoPark.EditorTools
                         var hits = new List<(float d, Renderer r)>();
                         foreach (Renderer r in UnityEngine.Object.FindObjectsByType<Renderer>())
                             if (r.enabled && r.gameObject.activeInHierarchy && r.bounds.IntersectRay(ray, out float d)) hits.Add((d, r));
+                        if (Physics.Raycast(ray, out RaycastHit ph, 2000f)) Result($"  collider {ph.collider.name} at {ph.point} normal {ph.normal}");
                         foreach (var h in hits.OrderBy(h => h.d).Take(8))
                             Result($"  hit {h.r.name} parent={h.r.transform.parent?.name} d={h.d:F1} bounds={h.r.bounds.center} size={h.r.bounds.size} mat={h.r.sharedMaterial?.name}");
                         break;
