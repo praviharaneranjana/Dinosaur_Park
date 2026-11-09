@@ -13,358 +13,211 @@ namespace DinoPark.EditorTools
     {
         private const string CarFolder = "Assets/Models/Vehicles/Cars";
         private const string CameraConfigPath = "Assets/Data/Camera/IslandCameraConfig.asset";
-        private const float OpeningHalfWidth = 4.6f;
-        private const float OpeningWallHeight = 4.4f;
-        private const float HeadwallHalfWidth = 13f;
-        private const float HeadwallHeight = 13f;
-        private const float HeadwallThickness = 2.8f;
+
+        /// <summary>Mainland ground height (m) away from the coast.</summary>
+        private const float LandLevel = 1.0f;
+        /// <summary>Highway centre line (Unity z) and half width (4 lanes of 3.5 m plus kerbs).</summary>
+        private const float HighwayZ = -215f;
+        private const float HighwayHalfWidth = 7.5f;
+        private const float HighwayReach = 640f;
+        /// <summary>Park entrance gate across the park road (Unity z).</summary>
+        private const float GateZ = -128f;
+        private const float ParkRoadHalfWidth = 3.5f;
 
         private static readonly Color Concrete = new Color(0.93f, 0.90f, 0.82f);   // off-white concrete #F4EDD8 (slightly darker)
         private static readonly Color Brass = new Color(0.95f, 0.72f, 0.29f);      // brass gold #F2B84B
+        private static readonly Color Timber = new Color(0.78f, 0.60f, 0.39f);     // light timber #C79A63
+        private static readonly Color Steel = new Color(0.23f, 0.28f, 0.26f);      // charcoal steel #3B4743
+        private static readonly Color Glass = new Color(0.56f, 0.80f, 0.80f);      // teal glass #8FCBCB
+        private static readonly Color LivingGreen = new Color(0.37f, 0.61f, 0.29f);// living roof #5E9B4A
+        private static readonly Color Amber = new Color(1f, 0.67f, 0.2f);          // amber glow #FFAA33
 
-        // ------------------------------------------------------------------ mountain
-        /// <summary>
-        /// The land side: a forested mountain range along the south edge with the visitor tunnel.
-        /// Hides the straight cut of the Blender ground and drops into the sea at both ends.
-        /// </summary>
-        private static void BuildMountainAndTunnel(Ctx ctx)
+        // ------------------------------------------------------------------ mainland
+        /// <summary>Mainland coastline (Unity z of the waterline) at x: hugs the headland neck, then curves away south.</summary>
+        private static float CoastZ(float x)
         {
+            float ax = Mathf.Abs(x);
+            float wiggle = (ProceduralTextures.WorldFbm(x * 0.01f, 0.73f, 3, 1f, 41) - 0.5f) * 16f;
+            float far = -150f - 28f * Mathf.SmoothStep(0f, 1f, (ax - 120f) / 160f) + wiggle;
+            return Mathf.Lerp(-114f, far, Mathf.SmoothStep(0f, 1f, (ax - 60f) / 80f));
+        }
+
+        /// <summary>
+        /// Mainland height before roads are cut in: sea floor offshore, a sandy shore, then low farmland
+        /// with gentle hills that flatten out near the highway and the park road.
+        /// </summary>
+        private static float MainlandRaw(float x, float z)
+        {
+            float d = CoastZ(x) - z;   // metres inland
+            float shore = Mathf.SmoothStep(0f, 1f, (d + 12f) / 34f);
+            float clearHighway = Mathf.SmoothStep(0f, 1f, (Mathf.Abs(z - HighwayZ) - 14f) / 31f);
+            float clearRoad = z > HighwayZ ? Mathf.SmoothStep(0f, 1f, (Mathf.Abs(x) - 14f) / 26f) : 1f;
+            float hills = Mathf.Max(-1f, (ProceduralTextures.WorldFbm(x * 0.012f, z * 0.012f, 3, 1f, 53) - 0.42f) * 7f);
+            float inland = Mathf.SmoothStep(0f, 1f, (d - 30f) / 80f) * Mathf.Min(clearHighway, clearRoad);
+            float bumps = (ProceduralTextures.WorldFbm(x * 0.05f, z * 0.05f, 2, 1f, 59) - 0.5f) * 0.5f;
+            float land = LandLevel + hills * inland + bumps * shore * Mathf.Min(clearHighway, clearRoad);
+            return Mathf.Lerp(SeaLevel - 3.5f, land, shore);
+        }
+
+        /// <summary>
+        /// The land side: the headland's neck joins flat mainland that runs east-west along the whole
+        /// south edge, with a beach where it meets the sea, scattered trees, and room for the highway.
+        /// Replaces the old mountain and tunnel.
+        /// </summary>
+        private static void BuildMainland(Ctx ctx)
+        {
+            foreach (string old in new[] { "Mountain_South", "Tunnel_Headwall", "Tunnel_Tube" })
+                AssetDatabase.DeleteAsset($"{GeneratedFolder}/{old}.asset");
+            foreach (string old in new[] { "M_Mountain", "M_Tunnel_Concrete", "M_Tunnel_Inside" })
+                AssetDatabase.DeleteAsset($"{MaterialFolder}/{old}.mat");
+
             Transform land = Group(ctx.Polish, "Land Side");
-            const float x0 = -320f, x1 = 320f, z0 = -360f, z1 = -118f, step = 4f;
+            const float x0 = -HighwayReach, x1 = HighwayReach, z0 = -440f, z1 = -100f, step = 4f;
             int nx = Mathf.RoundToInt((x1 - x0) / step) + 1, nz = Mathf.RoundToInt((z1 - z0) / step) + 1;
             var verts = new Vector3[nx * nz];
             for (int j = 0; j < nz; j++)
             for (int i = 0; i < nx; i++)
             {
                 float x = x0 + i * step, z = z0 + j * step;
-                verts[j * nx + i] = new Vector3(x, MountainHeight(ctx, x, z), z);
+                var w = new Vector3(x, 0f, z);
+                float y = MainlandRaw(x, z);
+                y = Flatten(w, y, ctx.Highway, HighwayHalfWidth + 1f, 10f);
+                y = Flatten(w, y, ctx.EntranceProfile, RoadHalfWidth, RoadShoulder);
+                verts[j * nx + i] = new Vector3(x, y - 0.05f, z);   // just under the island ground where they overlap
             }
             var tris = new List<int>((nx - 1) * (nz - 1) * 6);
             for (int j = 0; j < nz - 1; j++)
             for (int i = 0; i < nx - 1; i++)
             {
                 int a = j * nx + i, b = a + 1, c = a + nx, d = c + 1;
-                Vector3 mid = (verts[a] + verts[b] + verts[c] + verts[d]) * 0.25f;
-                // leave a hole where the headwall and the tunnel mouth stand
-                // the step from the apron up onto the headwall would stand in front of it
-                bool portalSlot = Mathf.Abs(mid.x) < HeadwallHalfWidth + 1f && mid.z > ctx.PortalZ - 0.6f && mid.z < ctx.PortalZ + 2.6f
-                                  && mid.y < ctx.ApronY + HeadwallHeight - 1f;
-                if (portalSlot) continue;
                 tris.AddRange(new[] { a, c, b, b, c, d });
             }
             var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
             mesh.vertices = verts;
             mesh.SetTriangles(tris, 0);
             mesh.RecalculateNormals();
-            Vector3[] nrm = mesh.normals;
             var colors = new Color[verts.Length];
             for (int i = 0; i < verts.Length; i++)
             {
                 Vector3 p = verts[i];
-                float slope = 1f - nrm[i].y;
                 float n = ProceduralTextures.WorldFbm(p.x * 0.03f, p.z * 0.03f, 3, 1f, 23);
-                Color grass = Color.Lerp(new Color(0.36f, 0.54f, 0.21f), new Color(0.52f, 0.66f, 0.30f), n);
-                Color rock = Color.Lerp(new Color(0.50f, 0.46f, 0.40f), new Color(0.64f, 0.58f, 0.50f), n);
-                float rocky = Mathf.Clamp01(Mathf.SmoothStep(0.34f, 0.62f, slope + (n - 0.5f) * 0.25f) + Mathf.SmoothStep(70f, 110f, p.y) * 0.5f);
-                Color c = Color.Lerp(grass, rock, rocky);
-                if (p.y < 1.2f) c = Color.Lerp(new Color(0.80f, 0.73f, 0.56f), c, Mathf.Clamp01((p.y - SeaLevel) / 1.6f));
-                if (p.y < SeaLevel - 0.3f) c *= 0.7f;
+                float patch = ProceduralTextures.WorldFbm(p.x * 0.008f, p.z * 0.008f, 2, 1f, 61);
+                Color grass = Color.Lerp(new Color(0.38f, 0.55f, 0.22f), new Color(0.53f, 0.66f, 0.30f), n);
+                grass = Color.Lerp(grass, new Color(0.60f, 0.62f, 0.33f), Mathf.SmoothStep(0.62f, 0.8f, patch) * 0.5f);   // drier fields
+                Color sand = Color.Lerp(new Color(0.80f, 0.73f, 0.56f), new Color(0.86f, 0.79f, 0.62f), n);
+                Color c = Color.Lerp(sand, grass, Mathf.Clamp01((p.y - (SeaLevel + 0.5f)) / 1.0f));
+                if (p.y < SeaLevel - 0.2f) c = Color.Lerp(sand * 0.75f, sand, Mathf.Clamp01((p.y - SeaLevel + 2.5f) / 2.3f));
                 c.a = 1f;
                 colors[i] = c;
             }
             mesh.colors = colors;
             mesh.RecalculateBounds();
-            mesh = SaveMesh(mesh, "Mountain_South");
-            Material rockMat = Mat("M_Mountain", LitShader, m =>
+            mesh = SaveMesh(mesh, "Mainland");
+            Material groundMat = Mat("M_Mainland", LitShader, m =>
             {
-                Opaque(m, Color.white, 0.08f);
-                RockDetail(m, 0.75f, 0.22f, 0.15f);
-                m.SetFloat("_DetailTiling", 0.12f);
-                m.SetFloat("_StrataHeight", 3.2f);
-                m.SetColor("_MossColor", new Color(0.33f, 0.48f, 0.2f));
+                Opaque(m, Color.white, 0.05f);
+                RockDetail(m, 0.35f, 0f, 0f);
+                m.SetFloat("_DetailTiling", 0.25f);
                 m.SetFloat("_Cull", (float)CullMode.Back);
             });
-            GameObject mountain = MeshObject("Mountain_South", land, mesh, new[] { rockMat }, true);
+            GameObject mainland = MeshObject("Mainland", land, mesh, new[] { groundMat }, true);
             Physics.SyncTransforms();
 
-            int trees = ScatterMountainTrees(ctx, land, mountain.GetComponent<MeshCollider>());
-
-            // keep the portal and its approach clear of island plants and rocks
-            foreach (string g in new[] { "Plants", "Props" })
-            {
-                Transform group = ctx.Island.Find(g);
-                if (group == null) continue;
-                foreach (Transform c in group)
-                {
-                    var r = c.GetComponent<Renderer>();
-                    if (r == null) continue;
-                    Vector3 p = r.bounds.center;
-                    if (Mathf.Abs(p.x) < HeadwallHalfWidth + 6f && p.z < ctx.PortalZ + 16f) c.gameObject.SetActive(false);
-                }
-            }
-            BuildPortal(ctx, land);
-            ctx.Log.Add($"Mountain: {nx}x{nz} grid, {trees} trees, tunnel portal at z {ctx.PortalZ:F0}, apron y {ctx.ApronY:F2}");
+            int trees = ScatterMainlandTrees(ctx, land, mainland.GetComponent<MeshCollider>());
+            ctx.Log.Add($"Mainland: {nx}x{nz} grid, {trees} trees, coast at z {CoastZ(0f):F0} (neck) to {CoastZ(300f):F0}, highway at z {HighwayZ}");
         }
 
-        private static float MountainHeight(Ctx ctx, float x, float z)
+        private static int ScatterMainlandTrees(Ctx ctx, Transform land, MeshCollider ground)
         {
-            float footZ = -136f - 10f * ProceduralTextures.WorldFbm(x * 0.012f, 0.37f, 2, 1f, 7);
-            float t = Mathf.Clamp01((footZ - z) / 100f);
-            float rise = Mathf.Pow(t * t * (3f - 2f * t), 0.8f);
-            float ridge = 1f - Mathf.Abs(ProceduralTextures.WorldFbm(x * 0.011f, z * 0.011f, 4, 1f, 11) * 2f - 1f);
-            float massif = ProceduralTextures.WorldFbm(x * 0.0045f, z * 0.0045f, 2, 1f, 13);
-            float peak = 50f + 36f * ridge + 26f * (massif - 0.5f);
-            float detail = (ProceduralTextures.WorldFbm(x * 0.025f, z * 0.025f, 3, 1f, 19) - 0.5f) * 5f;
-            float h = -5f + rise * peak + detail * Mathf.Clamp01(rise * 2f);
-
-            // ends drop into the sea
-            float ax = Mathf.Abs(x);
-            float keep = 1f - Mathf.SmoothStep(0f, 1f, (ax - 185f) / 95f);
-            h = Mathf.Lerp(-16f, h, keep);
-
-            // cut for the road in front of the portal, solid rock face behind it
-            if (z > ctx.PortalZ + 0.5f)
+            string[] inland = { "PLN_Broadleaf_Round", "PLN_Broadleaf_Tall", "PLN_Broadleaf_Wide", "PLN_Broadleaf_Oak", "PLN_Conifer_Mature", "PLN_Bush_Round", "PLN_Bush_Berry" };
+            string[] coast = { "PLN_Palm_Coconut", "PLN_Palm_Tall", "PLN_Palm_Short" };
+            List<(GameObject prefab, float scale)> Load(string[] kinds)
             {
-                // flat apron in front of the portal (also fills any low beach there so no sea shows)
-                float cut = (1f - Mathf.SmoothStep(0f, 1f, (ax - HeadwallHalfWidth) / 16f)) * (1f - Mathf.SmoothStep(0f, 1f, (z - ctx.PortalZ - 18f) / 12f));
-                h = Mathf.Lerp(h, ctx.ApronY - 0.3f, cut);
-            }
-            else if (z > ctx.PortalZ - HeadwallThickness)
-            {
-                // rock sits on top of the headwall slab
-                float w = 1f - Mathf.SmoothStep(0f, 1f, (ax - HeadwallHalfWidth) / 6f);
-                h = Mathf.Lerp(h, ctx.ApronY + HeadwallHeight - 0.3f, w);
-            }
-            else
-            {
-                float face = (1f - Mathf.SmoothStep(0f, 1f, (ax - 15f) / 16f)) * (1f - Mathf.SmoothStep(0f, 1f, (ctx.PortalZ - z - 18f) / 30f));
-                h = Mathf.Max(h, Mathf.Lerp(h, ctx.ApronY + HeadwallHeight + 4f, face));
-            }
-            return h;
-        }
-
-        private static int ScatterMountainTrees(Ctx ctx, Transform land, MeshCollider mountain)
-        {
-            string[] kinds = { "PLN_Broadleaf_Round", "PLN_Broadleaf_Tall", "PLN_Broadleaf_Wide", "PLN_Conifer_Mature", "PLN_Conifer_TallOld", "PLN_Conifer_Young", "PLN_Bush_Round" };
-            var prefabs = new List<(GameObject prefab, float scale)>();
-            Transform plants = ctx.Island.Find("Plants");
-            foreach (string k in kinds)
-            {
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/{k}.prefab");
-                if (prefab == null) continue;
-                float s = 2.5f;
-                if (plants != null)
+                var list = new List<(GameObject, float)>();
+                Transform plants = ctx.Island.Find("Plants");
+                foreach (string k in kinds)
                 {
-                    var same = plants.Cast<Transform>().Where(c => PrefabUtility.GetCorrespondingObjectFromSource(c.gameObject) == prefab).ToList();
-                    if (same.Count > 0) s = same.Average(c => c.localScale.y);
+                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/{k}.prefab");
+                    if (prefab == null) continue;
+                    float s = 2.5f;
+                    if (plants != null)
+                    {
+                        var same = plants.Cast<Transform>().Where(c => PrefabUtility.GetCorrespondingObjectFromSource(c.gameObject) == prefab).ToList();
+                        if (same.Count > 0) s = same.Average(c => c.localScale.y);
+                    }
+                    list.Add((prefab, s));
                 }
-                prefabs.Add((prefab, s));
+                return list;
             }
-            if (prefabs.Count == 0) return 0;
+            var inlandKinds = Load(inland);
+            var coastKinds = Load(coast);
+            if (inlandKinds.Count == 0) return 0;
 
-            Transform group = Group(land, "Mountain Trees");
+            Transform group = Group(land, "Mainland Trees");
             var rng = new System.Random(4242);
             int placed = 0;
-            for (int tries = 0; tries < 12000 && placed < 520; tries++)
+            for (int tries = 0; tries < 20000 && placed < 460; tries++)
             {
-                float x = (float)(rng.NextDouble() * 440.0 - 220.0);
-                float z = (float)(rng.NextDouble() * 140.0 - 280.0);
-                if (Mathf.Abs(x) < 20f && z > ctx.PortalZ - 22f) continue;
-                if (ProceduralTextures.WorldFbm(x * 0.025f, z * 0.025f, 2, 1f, 31) < 0.40f) continue;
-                if (!mountain.Raycast(new Ray(new Vector3(x, 400f, z), Vector3.down), out RaycastHit hit, 800f)) continue;
-                if (hit.normal.y < 0.62f || hit.point.y < 1.5f || hit.point.y > 85f) continue;
-                var pick = prefabs[rng.Next(prefabs.Count)];
+                float x = (float)(rng.NextDouble() * 640.0 - 320.0);
+                float z = (float)(rng.NextDouble() * 300.0 - 430.0);
+                if (Mathf.Abs(z - HighwayZ) < HighwayHalfWidth + 9f) continue;                    // highway verge
+                if (z > HighwayZ && Mathf.Abs(x) < ParkRoadHalfWidth + 9f) continue;               // park road verge
+                if (Mathf.Abs(x) < 26f && Mathf.Abs(z - GateZ) < 14f) continue;                    // gate forecourt
+                if (Mathf.Abs(z - GateZ) < 3f) continue;                                           // perimeter wall
+                float inlandDist = CoastZ(x) - z;
+                bool nearCoast = inlandDist < 32f;
+                if (!nearCoast && ProceduralTextures.WorldFbm(x * 0.02f, z * 0.02f, 2, 1f, 31) < 0.45f) continue;   // groves, not a carpet
+                if (!ground.Raycast(new Ray(new Vector3(x, 400f, z), Vector3.down), out RaycastHit hit, 800f)) continue;
+                if (hit.point.y < SeaLevel + 0.7f || hit.normal.y < 0.8f) continue;
+                if (z > -150f && GroundY(ctx, x, z, -50f) > hit.point.y + 0.3f) continue;          // island ground covers it: leave the island as it is
+                var kinds = nearCoast && coastKinds.Count > 0 ? coastKinds : inlandKinds;
+                var pick = kinds[rng.Next(kinds.Count)];
                 var go = (GameObject)PrefabUtility.InstantiatePrefab(pick.prefab, group);
-                go.transform.SetPositionAndRotation(hit.point - Vector3.up * 0.2f, Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f));
+                go.transform.SetPositionAndRotation(hit.point - Vector3.up * 0.15f, Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f));
                 go.transform.localScale = Vector3.one * pick.scale * (0.8f + (float)rng.NextDouble() * 0.45f);
                 placed++;
             }
             return placed;
         }
 
-        // ------------------------------------------------------------------ tunnel portal
-        private static void BuildPortal(Ctx ctx, Transform land)
+        // ------------------------------------------------------------------ roads
+        /// <summary>Highway along the mainland and the two-lane park road from it to the plaza.</summary>
+        private static void BuildRoads(Ctx ctx)
         {
-            Transform portal = Group(land, "Tunnel Portal");
-            float apron = ctx.ApronY, fz = ctx.PortalZ;
-            var centre = new Vector2(0f, apron + OpeningWallHeight);
+            if (ctx.EntranceProfile == null || ctx.Highway == null) return;
+            Transform roads = Group(ctx.Polish, "Roads");
 
-            // headwall with the arched opening (ring between the opening outline and the wall outline)
-            const int n = 144;
-            var verts = new List<Vector3>();
-            var cols = new List<Color>();
-            var tris = new List<int>();
-            for (int layer = 0; layer < 2; layer++)
+            Material highwayMat = Mat("M_Road_Highway", LitShader, m =>
             {
-                float z = layer == 0 ? fz : fz - HeadwallThickness;
-                for (int k = 0; k <= n; k++)
-                {
-                    float a = k / (float)n * Mathf.PI * 2f;
-                    Vector2 inner = centre + OpeningDir(a) * OpeningReach(a);
-                    Vector2 outer = centre + OpeningDir(a) * WallReach(a);
-                    verts.Add(new Vector3(inner.x, inner.y, z)); cols.Add(Concrete);
-                    verts.Add(new Vector3(outer.x, outer.y, z)); cols.Add(Concrete);
-                }
-            }
-            int stride = (n + 1) * 2;
-            for (int layer = 0; layer < 2; layer++)
-            for (int k = 0; k < n; k++)
-            {
-                int i0 = layer * stride + k * 2, o0 = i0 + 1, i1 = i0 + 2, o1 = i0 + 3;
-                tris.AddRange(new[] { i0, o0, o1, i0, o1, i1 });
-            }
-            for (int k = 0; k < n; k++)   // outer rim (top and sides of the slab)
-            {
-                int a = k * 2 + 1, b = a + 2, c = stride + k * 2 + 1, d = c + 2;
-                tris.AddRange(new[] { a, c, d, a, d, b });
-            }
-            AddBox(verts, cols, tris, new Vector3(0f, apron + HeadwallHeight - 0.35f, fz - HeadwallThickness * 0.5f + 0.25f),
-                new Vector3(HeadwallHalfWidth * 2f + 1.2f, 0.9f, HeadwallThickness + 0.8f), Quaternion.identity, Concrete);
-            AddBox(verts, cols, tris, new Vector3(0f, apron + HeadwallHeight - 1.15f, fz + 0.18f),
-                new Vector3(HeadwallHalfWidth * 2f, 0.35f, 0.2f), Quaternion.identity, Brass);
-            // concrete apron slab in front of the portal (the road runs on top of it)
-            AddBox(verts, cols, tris, new Vector3(0f, apron - 0.25f, fz + 4f), new Vector3(HeadwallHalfWidth * 2f + 2f, 0.4f, 8.5f), Quaternion.identity, Concrete * 0.92f);
-            for (int s = -1; s <= 1; s += 2)
-            {
-                // tapered wing wall: full headwall height at the portal, sloping down along the cut bank
-                Vector3 start = new Vector3(s * (HeadwallHalfWidth - 0.4f), apron - 0.6f, fz - 0.3f);
-                Vector3 dir = Quaternion.Euler(0f, s * -38f, 0f) * new Vector3(s, 0f, 0f);
-                AddWedge(verts, cols, tris, start, dir, 15f, HeadwallHeight + 0.6f, 1.6f, 1.0f, Concrete);
-            }
-            var wall = new Mesh();
-            wall.SetVertices(verts);
-            wall.SetColors(cols);
-            wall.SetTriangles(tris, 0);
-            wall.RecalculateNormals();
-            wall.RecalculateBounds();
-            Material concrete = Mat("M_Tunnel_Concrete", LitShader, m =>
-            {
-                Opaque(m, Color.white, 0.15f);
-                RockDetail(m, 0.3f, 0f, 0.12f);
-                m.SetFloat("_DetailTiling", 0.35f);
-                m.SetFloat("_Cull", (float)CullMode.Off);
-            });
-            MeshObject("Headwall", portal, SaveMesh(wall, "Tunnel_Headwall"), new[] { concrete }, true);
-
-            // tube: the opening outline (without the floor) pushed into the mountain, fading to black
-            var outline = new List<Vector2>();
-            outline.Add(new Vector2(OpeningHalfWidth, apron - 0.2f));
-            for (int k = 0; k <= 24; k++)
-            {
-                float a = k / 24f * Mathf.PI;
-                outline.Add(centre + new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * OpeningHalfWidth);
-            }
-            outline.Add(new Vector2(-OpeningHalfWidth, apron - 0.2f));
-            var tv = new List<Vector3>();
-            var tc = new List<Color>();
-            var tt = new List<int>();
-            const int rings = 24;
-            for (int r = 0; r <= rings; r++)
-            {
-                float depth = r / (float)rings * TunnelDepth;
-                float dark = Mathf.Clamp01(depth / 34f);
-                Color c = Color.Lerp(Concrete * 0.65f, new Color(0.02f, 0.02f, 0.025f), dark);
-                c.a = 1f;
-                foreach (Vector2 o in outline)
-                {
-                    tv.Add(new Vector3(o.x, o.y, fz - HeadwallThickness * 0.5f - depth));
-                    tc.Add(c);
-                }
-            }
-            int m2 = outline.Count;
-            for (int r = 0; r < rings; r++)
-            for (int k = 0; k < m2 - 1; k++)
-            {
-                int a = r * m2 + k, b = a + 1, c = a + m2, d = c + 1;
-                tt.AddRange(new[] { a, b, d, a, d, c });
-            }
-            int cap = tv.Count;   // black end cap
-            float zc = fz - HeadwallThickness * 0.5f - TunnelDepth;
-            tv.Add(new Vector3(-OpeningHalfWidth, apron - 0.3f, zc)); tv.Add(new Vector3(OpeningHalfWidth, apron - 0.3f, zc));
-            tv.Add(new Vector3(OpeningHalfWidth, centre.y + OpeningHalfWidth, zc)); tv.Add(new Vector3(-OpeningHalfWidth, centre.y + OpeningHalfWidth, zc));
-            for (int k = 0; k < 4; k++) tc.Add(Color.black);
-            tt.AddRange(new[] { cap, cap + 2, cap + 1, cap, cap + 3, cap + 2 });
-            var tube = new Mesh();
-            tube.SetVertices(tv);
-            tube.SetColors(tc);
-            tube.SetTriangles(tt, 0);
-            tube.RecalculateNormals();
-            tube.RecalculateBounds();
-            Material inside = Mat("M_Tunnel_Inside", LitShader, m =>
-            {
-                Opaque(m, Color.white, 0.05f);
+                Opaque(m, Color.white, 0.2f);
                 m.DisableKeyword("_TRIPLANAR");
                 m.SetFloat("_Triplanar", 0f);
-                m.SetFloat("_Cull", (float)CullMode.Off);
+                m.SetTexture("_BaseMap", ProceduralTextures.Highway);
+                m.SetFloat("_UseMapColor", 1f);
+                m.SetFloat("_Cull", (float)CullMode.Back);
             });
-            MeshObject("Tunnel", portal, SaveMesh(tube, "Tunnel_Tube"), new[] { inside }, false, ShadowCastingMode.Off);
-        }
-
-        private static Vector2 OpeningDir(float a) => new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-
-        /// <summary>Distance from the opening centre to the arch outline (semicircle over straight walls).</summary>
-        private static float OpeningReach(float a)
-        {
-            float c = Mathf.Cos(a), s = Mathf.Sin(a);
-            if (s >= 0f) return OpeningHalfWidth;
-            float tx = Mathf.Abs(c) > 1e-4f ? OpeningHalfWidth / Mathf.Abs(c) : float.MaxValue;
-            float ty = OpeningWallHeight / Mathf.Max(-s, 1e-4f);
-            return Mathf.Min(tx, ty);
-        }
-
-        /// <summary>Distance from the opening centre to the headwall outline (rectangle).</summary>
-        private static float WallReach(float a)
-        {
-            float c = Mathf.Cos(a), s = Mathf.Sin(a);
-            float tx = Mathf.Abs(c) > 1e-4f ? HeadwallHalfWidth / Mathf.Abs(c) : float.MaxValue;
-            float ty = s >= 0f ? (HeadwallHeight - OpeningWallHeight) / Mathf.Max(s, 1e-4f) : OpeningWallHeight / Mathf.Max(-s, 1e-4f);
-            return Mathf.Min(tx, ty);
-        }
-
-        /// <summary>Wall running from <paramref name="start"/> along <paramref name="dir"/>, top sloping from h0 to h1.</summary>
-        private static void AddWedge(List<Vector3> v, List<Color> c, List<int> t, Vector3 start, Vector3 dir, float length, float h0, float h1, float thick, Color col)
-        {
-            dir.y = 0f;
-            dir.Normalize();
-            Vector3 side = Vector3.Cross(Vector3.up, dir) * (thick * 0.5f);
-            Vector3 end = start + dir * length;
-            Vector3[] p =
+            Material roadMat = Mat("M_Road_Asphalt", LitShader, m =>
             {
-                start - side, start + side, end + side, end - side,                                   // base
-                start - side + Vector3.up * h0, start + side + Vector3.up * h0,
-                end + side + Vector3.up * h1, end - side + Vector3.up * h1,                           // top
-            };
-            int[][] faces = { new[] { 0, 1, 2, 3 }, new[] { 4, 7, 6, 5 }, new[] { 0, 4, 5, 1 }, new[] { 1, 5, 6, 2 }, new[] { 2, 6, 7, 3 }, new[] { 3, 7, 4, 0 } };
-            foreach (int[] f in faces)
-            {
-                int s = v.Count;
-                foreach (int k in f) { v.Add(p[k]); c.Add(col); }
-                t.AddRange(new[] { s, s + 1, s + 2, s, s + 2, s + 3 });
-            }
+                Opaque(m, Color.white, 0.2f);
+                m.DisableKeyword("_TRIPLANAR");
+                m.SetFloat("_Triplanar", 0f);
+                m.SetTexture("_BaseMap", ProceduralTextures.Road);
+                m.SetFloat("_UseMapColor", 1f);
+                m.SetFloat("_Cull", (float)CullMode.Back);
+            });
+
+            var highway = ctx.Highway.Select(p => p + Vector3.up * 0.08f).ToList();
+            MeshObject("Highway", roads, SaveMesh(RoadStrip(highway, HighwayHalfWidth, 16f), "Highway"), new[] { highwayMat }, true, ShadowCastingMode.Off);
+
+            var park = ctx.EntranceProfile.Select(p => p + Vector3.up * 0.1f).ToList();
+            park[0] = new Vector3(0f, park[0].y, HighwayZ + HighwayHalfWidth - 0.05f);
+            MeshObject("Park_Road", roads, SaveMesh(RoadStrip(park, ParkRoadHalfWidth, 8f), "Entrance_Road"), new[] { roadMat }, true, ShadowCastingMode.Off);
+            ctx.Log.Add($"Roads: {HighwayReach * 2f:F0} m four-lane highway at z {HighwayZ}, park road {park[park.Count - 1].z - park[0].z:F0} m to the plaza");
         }
 
-        private static void AddBox(List<Vector3> v, List<Color> c, List<int> t, Vector3 centre, Vector3 size, Quaternion rot, Color col)
+        /// <summary>Flat strip along a centre line; uv.x 0..1 across, uv.y = metres / uvLength along.</summary>
+        private static Mesh RoadStrip(List<Vector3> path, float halfWidth, float uvLength)
         {
-            Vector3 h = size * 0.5f;
-            Vector3[] corners =
-            {
-                new Vector3(-h.x, -h.y, -h.z), new Vector3(h.x, -h.y, -h.z), new Vector3(h.x, h.y, -h.z), new Vector3(-h.x, h.y, -h.z),
-                new Vector3(-h.x, -h.y, h.z), new Vector3(h.x, -h.y, h.z), new Vector3(h.x, h.y, h.z), new Vector3(-h.x, h.y, h.z),
-            };
-            int[][] faces = { new[] { 0, 3, 2, 1 }, new[] { 4, 5, 6, 7 }, new[] { 0, 4, 7, 3 }, new[] { 1, 2, 6, 5 }, new[] { 3, 7, 6, 2 }, new[] { 0, 1, 5, 4 } };
-            foreach (int[] f in faces)
-            {
-                int s = v.Count;
-                foreach (int k in f) { v.Add(centre + rot * corners[k]); c.Add(col); }
-                t.AddRange(new[] { s, s + 1, s + 2, s, s + 2, s + 3 });
-            }
-        }
-
-        // ------------------------------------------------------------------ road
-        private static void BuildRoad(Ctx ctx)
-        {
-            List<Vector3> path = ctx.EntranceProfile;
-            if (path == null || path.Count < 2) return;
             var v = new List<Vector3>();
             var uv = new List<Vector2>();
             var tris = new List<int>();
@@ -372,13 +225,13 @@ namespace DinoPark.EditorTools
             for (int i = 0; i < path.Count; i++)
             {
                 if (i > 0) arc += Vector3.Distance(path[i - 1], path[i]);
-                Vector3 p = path[i];
-                bool inside = p.z < ctx.PortalZ;
-                float y = inside ? ctx.ApronY + 0.03f : p.y + 0.08f;
-                v.Add(new Vector3(-3.5f, y, p.z));
-                v.Add(new Vector3(3.5f, y, p.z));
-                uv.Add(new Vector2(0f, arc / 8f));
-                uv.Add(new Vector2(1f, arc / 8f));
+                Vector3 tan = path[Mathf.Min(i + 1, path.Count - 1)] - path[Mathf.Max(i - 1, 0)];
+                tan.y = 0f;
+                Vector3 side = Vector3.Cross(Vector3.up, tan.normalized) * halfWidth;
+                v.Add(path[i] - side);
+                v.Add(path[i] + side);
+                uv.Add(new Vector2(0f, arc / uvLength));
+                uv.Add(new Vector2(1f, arc / uvLength));
                 if (i > 0)
                 {
                     int a = (i - 1) * 2;
@@ -391,21 +244,181 @@ namespace DinoPark.EditorTools
             mesh.SetColors(Enumerable.Repeat(Color.white, v.Count).ToList());
             mesh.SetTriangles(tris, 0);
             mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-            Material road = Mat("M_Road_Asphalt", LitShader, m =>
+            if (mesh.normals[0].y < 0f)
             {
-                Opaque(m, Color.white, 0.2f);
-                m.DisableKeyword("_TRIPLANAR");
-                m.SetFloat("_Triplanar", 0f);
-                m.SetTexture("_BaseMap", ProceduralTextures.Road);
-                m.SetFloat("_UseMapColor", 1f);
+                for (int i = 0; i < tris.Count; i += 3) (tris[i + 1], tris[i + 2]) = (tris[i + 2], tris[i + 1]);
+                mesh.SetTriangles(tris, 0);
+                mesh.RecalculateNormals();
+            }
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        // ------------------------------------------------------------------ entrance gate
+        /// <summary>
+        /// Grand entrance where the park road enters the headland: two concrete pylons with brass bands,
+        /// a timber beam with a living roof, the hanging brass "DINO PARK" sign, ticket booths on both
+        /// sides, a perimeter wall along the neck to both shores, and street lamps down the park road.
+        /// </summary>
+        private static void BuildEntrance(Ctx ctx)
+        {
+            if (ctx.EntranceProfile == null) return;
+            Transform gate = Group(ctx.Polish, "Entrance Gate");
+            DistToPath(new Vector3(0f, 0f, GateZ), ctx.EntranceProfile, out _, out float gy);
+            gy += 0.1f;
+
+            var v = new List<Vector3>();
+            var c = new List<Color>();
+            var t = new List<int>();
+            void Box(float x, float y, float z, float sx, float sy, float sz, Color col) =>
+                AddBox(v, c, t, new Vector3(x, y, z), new Vector3(sx, sy, sz), Quaternion.identity, col);
+
+            // pylons
+            for (int s = -1; s <= 1; s += 2)
+            {
+                float px = s * 7.4f;
+                Box(px, gy + 0.5f, GateZ, 4.2f, 1.0f, 4.2f, Concrete * 0.9f);
+                Box(px, gy + 6f, GateZ, 3.2f, 10f, 3.2f, Concrete);
+                Box(px, gy + 7.6f, GateZ, 3.35f, 0.5f, 3.35f, Brass);
+                Box(px, gy + 11.3f, GateZ, 3.8f, 0.6f, 3.8f, Steel);
+                Box(px, gy + 3.2f, GateZ - 1.62f, 1.2f, 4.5f, 0.06f, Glass);   // tall slot window, road side
+                Box(px, gy + 3.2f, GateZ + 1.62f, 1.2f, 4.5f, 0.06f, Glass);
+            }
+            // beam with living roof
+            Box(0f, gy + 9.4f, GateZ, 18.6f, 1.4f, 1.9f, Timber);
+            Box(0f, gy + 10.3f, GateZ, 19.0f, 0.4f, 2.3f, Steel);
+            Box(0f, gy + 10.65f, GateZ, 17.2f, 0.35f, 1.7f, LivingGreen);
+            // hanging sign
+            Box(-4.2f, gy + 8.25f, GateZ, 0.15f, 1.0f, 0.15f, Steel);
+            Box(4.2f, gy + 8.25f, GateZ, 0.15f, 1.0f, 0.15f, Steel);
+            Box(0f, gy + 6.75f, GateZ, 11.2f, 2.1f, 0.3f, Brass);
+            Box(0f, gy + 6.75f, GateZ, 11.6f, 2.4f, 0.18f, Steel);
+            // ticket booths
+            for (int s = -1; s <= 1; s += 2)
+            {
+                float bx = s * 14.5f;
+                Box(bx, gy + 1.6f, GateZ, 4.0f, 3.2f, 3.6f, Concrete);
+                Box(bx, gy + 1.9f, GateZ, 4.06f, 1.2f, 3.66f, Glass);
+                Box(bx, gy + 3.35f, GateZ, 5.0f, 0.3f, 4.6f, Timber);
+                Box(bx, gy + 3.6f, GateZ, 4.6f, 0.2f, 4.2f, LivingGreen);
+            }
+            // forecourt paving under the gate
+            Box(0f, gy - 0.12f, GateZ, 34f, 0.3f, 14f, Concrete * 0.85f);
+
+            // perimeter wall from the booths out to both shores
+            int wallSegments = 0;
+            for (int s = -1; s <= 1; s += 2)
+            {
+                for (float x = 17.5f; x < 200f; x += 2f)
+                {
+                    float wx = s * (x + 1f);
+                    if (!Physics.Raycast(new Vector3(wx, 300f, GateZ), Vector3.down, out RaycastHit hit, 600f, ~0, QueryTriggerInteraction.Ignore)) break;
+                    if (hit.point.y < SeaLevel + 0.35f) break;
+                    float y = hit.point.y;
+                    Box(wx, y + 0.8f, GateZ, 2.05f, 2.6f, 0.6f, Concrete);
+                    Box(wx, y + 2.15f, GateZ, 2.05f, 0.15f, 0.8f, Timber);
+                    if (Mathf.RoundToInt(x) % 10 == 7) Box(wx, y + 1.0f, GateZ, 0.8f, 3.0f, 0.9f, Concrete * 0.92f);   // pier every 10 m
+                    wallSegments++;
+                }
+            }
+
+            // street lamps down the park road
+            int lamps = 0;
+            foreach (Vector3 p in ctx.EntranceProfile)
+            {
+                if (Mathf.RoundToInt(p.z - HighwayZ) % 20 != 0 || p.z < HighwayZ + 16f || p.z > -84f || Mathf.Abs(p.z - GateZ) < 9f) continue;
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    float lx = s * (ParkRoadHalfWidth + 1.6f);
+                    Box(lx, p.y + 2.8f, p.z, 0.22f, 5.6f, 0.22f, Steel);
+                    Box(lx - s * 0.6f, p.y + 5.55f, p.z, 1.3f, 0.12f, 0.16f, Steel);
+                    Box(lx - s * 1.15f, p.y + 5.4f, p.z, 0.5f, 0.22f, 0.4f, Amber);
+                    lamps++;
+                }
+            }
+
+            var mesh = new Mesh { indexFormat = IndexFormat.UInt32 };
+            mesh.SetVertices(v);
+            mesh.SetColors(c);
+            mesh.SetTriangles(t, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            Material mat = Mat("M_Entrance", LitShader, m =>
+            {
+                Opaque(m, Color.white, 0.18f);
+                RockDetail(m, 0.18f, 0f, 0f);
+                m.SetFloat("_DetailTiling", 0.5f);
                 m.SetFloat("_Cull", (float)CullMode.Back);
             });
-            MeshObject("Entrance_Road", Group(ctx.Polish, "Roads"), SaveMesh(mesh, "Entrance_Road"), new[] { road }, true, ShadowCastingMode.Off);
-            ctx.Log.Add($"Road: {arc:F0} m asphalt from the tunnel to the plaza");
+            MeshObject("Gate", gate, SaveMesh(mesh, "Entrance_Gate"), new[] { mat }, true);
+
+            // sign lettering, both faces
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            for (int s = -1; s <= 1; s += 2)
+            {
+                var go = new GameObject(s < 0 ? "Sign_South" : "Sign_North");
+                go.transform.SetParent(gate, false);
+                go.transform.SetPositionAndRotation(new Vector3(0f, gy + 6.75f, GateZ + s * 0.17f), Quaternion.Euler(0f, s < 0 ? 0f : 180f, 0f));
+                var tm = go.AddComponent<TextMesh>();
+                tm.text = "DINO PARK";
+                tm.font = font;
+                tm.fontSize = 128;
+                tm.characterSize = 0.13f;
+                tm.fontStyle = FontStyle.Bold;
+                tm.anchor = TextAnchor.MiddleCenter;
+                tm.alignment = TextAlignment.Center;
+                tm.color = Steel;
+                var r = go.GetComponent<MeshRenderer>();
+                r.sharedMaterial = font.material;
+                r.shadowCastingMode = ShadowCastingMode.Off;
+            }
+
+            // nothing from the island may stand in the gate, the forecourt or the wall line
+            int hidden = 0;
+            foreach (string g in new[] { "Plants", "Props" })
+            {
+                Transform group = ctx.Island.Find(g);
+                if (group == null) continue;
+                foreach (Transform child in group)
+                {
+                    var r = child.GetComponent<Renderer>();
+                    if (r == null || !child.gameObject.activeSelf) continue;
+                    Vector3 p = r.bounds.center;
+                    float dz = Mathf.Abs(p.z - GateZ);
+                    if ((Mathf.Abs(p.x) < 22f && dz < 10f) || dz < 2.5f + Mathf.Min(r.bounds.extents.x, r.bounds.extents.z) * 0.5f)
+                    {
+                        child.gameObject.SetActive(false);
+                        hidden++;
+                    }
+                }
+            }
+            ctx.Log.Add($"Entrance: gate at z {GateZ} (y {gy:F2}), {wallSegments} wall segments, {lamps} lamps, {hidden} island plants/props cleared");
+        }
+
+        private static void AddBox(List<Vector3> v, List<Color> c, List<int> t, Vector3 centre, Vector3 size, Quaternion rot, Color col)
+        {
+            Vector3 h = size * 0.5f;
+            Vector3[] corners =
+            {
+                new Vector3(-h.x, -h.y, -h.z), new Vector3(h.x, -h.y, -h.z), new Vector3(h.x, h.y, -h.z), new Vector3(-h.x, h.y, -h.z),
+                new Vector3(-h.x, -h.y, h.z), new Vector3(h.x, -h.y, h.z), new Vector3(h.x, h.y, h.z), new Vector3(-h.x, h.y, h.z),
+            };
+            int[][] faces = { new[] { 0, 3, 2, 1 }, new[] { 4, 5, 6, 7 }, new[] { 0, 4, 7, 3 }, new[] { 1, 2, 6, 5 }, new[] { 3, 7, 6, 2 }, new[] { 0, 1, 5, 4 } };
+            col.a = 1f;
+            foreach (int[] f in faces)
+            {
+                int s = v.Count;
+                foreach (int k in f) { v.Add(centre + rot * corners[k]); c.Add(col); }
+                t.AddRange(new[] { s, s + 1, s + 2, s, s + 2, s + 3 });
+            }
         }
 
         // ------------------------------------------------------------------ traffic
+        /// <summary>
+        /// Through traffic both ways on the highway (two loops: outer and inner lanes, U-turning far
+        /// off screen), and visitor cars that leave the eastbound lane, drive to the plaza, turn and
+        /// head back west. Right-hand traffic.
+        /// </summary>
         private static void BuildTraffic(Ctx ctx)
         {
             List<Vector3> path = ctx.EntranceProfile;
@@ -414,22 +427,53 @@ namespace DinoPark.EditorTools
                 .Select(g => AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g)))
                 .Where(g => g != null).ToArray();
             if (cars.Length == 0) { ctx.Log.Add("Traffic: no car models"); return; }
+            Transform root = Group(ctx.Polish, "Traffic");
+            float hy = LandLevel + 0.1f;
 
-            float RoadY(Vector3 p) => (p.z < ctx.PortalZ ? ctx.ApronY + 0.03f : p.y + 0.08f);
-            var inbound = path.Where(p => p.z > ctx.PortalZ - 60f && p.z < -76f).ToList();
-            var loop = new List<Vector3>();
-            foreach (Vector3 p in inbound) loop.Add(new Vector3(1.75f, RoadY(p), p.z));
+            List<Vector3> HighwayLoop(float lane)
+            {
+                var loop = new List<Vector3>();
+                for (float x = -HighwayReach; x <= HighwayReach; x += 20f) loop.Add(new Vector3(x, hy, HighwayZ - lane));   // eastbound (south side)
+                for (float x = HighwayReach; x >= -HighwayReach; x -= 20f) loop.Add(new Vector3(x, hy, HighwayZ + lane));   // westbound (north side)
+                return loop;
+            }
+            Add("Highway Traffic Outer", HighwayLoop(5.25f), 22, 17f, 11);
+            Add("Highway Traffic Inner", HighwayLoop(1.75f), 16, 13.5f, 23);
+
+            // visitors: eastbound inner lane -> left turn -> park road -> plaza loop -> back -> right turn -> westbound
+            float RoadY(Vector3 p) => p.y + 0.1f;
+            var visit = new List<Vector3>();
+            const float rIn = 6f, rOut = 5f;
+            for (float x = -HighwayReach; x < 1.75f - rIn; x += 20f) visit.Add(new Vector3(x, hy, HighwayZ - 1.75f));
+            for (int k = 0; k <= 8; k++)
+            {
+                float a = Mathf.Lerp(-90f, 0f, k / 8f) * Mathf.Deg2Rad;
+                visit.Add(new Vector3(1.75f - rIn + Mathf.Cos(a) * rIn, hy, HighwayZ - 1.75f + rIn + Mathf.Sin(a) * rIn));
+            }
+            var inbound = path.Where(p => p.z > HighwayZ + 6f && p.z < -76f).ToList();
+            foreach (Vector3 p in inbound) visit.Add(new Vector3(1.75f, RoadY(p), p.z));
             float PlazaY(float x, float z) => GroundY(ctx, x, z, path[path.Count - 1].y) + 0.05f;
             foreach (Vector2 q in new[] { new Vector2(1.75f, -74f), new Vector2(4.8f, -70f), new Vector2(5.6f, -66f), new Vector2(3.2f, -62.5f),
                          new Vector2(0f, -61.5f), new Vector2(-3.2f, -62.5f), new Vector2(-5.6f, -66f), new Vector2(-4.8f, -70f), new Vector2(-1.75f, -74f) })
-                loop.Add(new Vector3(q.x, PlazaY(q.x, q.y), q.y));
-            for (int i = inbound.Count - 1; i >= 0; i--) loop.Add(new Vector3(-1.75f, RoadY(inbound[i]), inbound[i].z));
+                visit.Add(new Vector3(q.x, PlazaY(q.x, q.y), q.y));
+            float turnZ = HighwayZ + 1.75f + rOut;
+            for (int i = inbound.Count - 1; i >= 0; i--)
+                if (inbound[i].z > turnZ) visit.Add(new Vector3(-1.75f, RoadY(inbound[i]), inbound[i].z));
+            for (int k = 0; k <= 8; k++)
+            {
+                float a = Mathf.Lerp(0f, -90f, k / 8f) * Mathf.Deg2Rad;
+                visit.Add(new Vector3(-1.75f - rOut + Mathf.Cos(a) * rOut, hy, turnZ + Mathf.Sin(a) * rOut));
+            }
+            for (float x = -1.75f - rOut - 20f; x >= -HighwayReach; x -= 20f) visit.Add(new Vector3(x, hy, HighwayZ + 1.75f));
+            Add("Visitor Traffic", visit, 12, 11f, 7);
 
-            var go = new GameObject("Visitor Traffic");
-            go.transform.SetParent(Group(ctx.Polish, "Traffic"), false);
-            var traffic = go.AddComponent<VehicleTraffic>();
-            traffic.Configure(loop.ToArray(), cars, 0f);
-            ctx.Log.Add($"Traffic: {cars.Length} car models, loop of {loop.Count} points");
+            void Add(string name, List<Vector3> loop, int count, float speed, int seed)
+            {
+                var go = new GameObject(name);
+                go.transform.SetParent(root, false);
+                go.AddComponent<VehicleTraffic>().Configure(loop.ToArray(), cars, 0f, count, speed, seed);
+            }
+            ctx.Log.Add($"Traffic: {cars.Length} car models; highway both ways (38 cars), 12 visitor cars turning into the park");
         }
 
         // ------------------------------------------------------------------ camera + render settings
@@ -445,6 +489,20 @@ namespace DinoPark.EditorTools
                 so.FindProperty("minDistance").floatValue = 18f;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(config);
+            }
+
+            // Let the camera reach the gate and the highway south of the headland.
+            IslandBounds bounds = Object.FindAnyObjectByType<IslandBounds>();
+            if (bounds != null)
+            {
+                Rect r = bounds.IslandRect;
+                float zMin = Mathf.Min(r.yMin, HighwayZ - HighwayHalfWidth - 12f);
+                var so = new SerializedObject(bounds);
+                so.FindProperty("islandSize").vector2Value = new Vector2(r.width, r.yMax - zMin);
+                so.ApplyModifiedPropertiesWithoutUndo();
+                Vector3 p = bounds.transform.position;
+                bounds.transform.position = new Vector3(p.x, p.y, (r.yMax + zMin) * 0.5f);
+                EditorUtility.SetDirty(bounds);
             }
 
             // Water foam and soft particles read the camera depth texture.

@@ -21,7 +21,6 @@ namespace DinoPark.EditorTools
         private const float RoadHalfWidth = 4.2f;
         private const float RoadShoulder = 7.0f;
         private const float EntranceStartZ = -72f;    // plaza edge
-        private const float TunnelDepth = 80f;
 
         // ------------------------------------------------------------------ ramp + entrance road
         private static void FlattenPaths(Ctx ctx)
@@ -49,21 +48,19 @@ namespace DinoPark.EditorTools
             }
             SmoothHeights(ramp, 3, 2);
 
-            // Entrance road: tunnel end -> plaza along x = 0 (island_map roads[0]).
-            ctx.PortalZ = -152f;
+            // Highway along the mainland (west -> east) and the park road from it to the plaza along x = 0.
+            var highway = new List<Vector3>();
+            for (float x = -HighwayReach; x <= HighwayReach + 0.01f; x += 4f) highway.Add(new Vector3(x, LandLevel, HighwayZ));
+            ctx.Highway = highway;
             var road = new List<Vector3>();
-            for (float z = ctx.PortalZ - TunnelDepth; z <= EntranceStartZ + 0.01f; z += 2f) road.Add(new Vector3(0f, 0f, z));
-            float apronRaw = GroundY(ctx, 0f, -146f, 1f);
-            for (int i = 0; i < road.Count; i++)
-            {
-                float z = road[i].z;
-                float y = z <= -146f ? apronRaw : GroundY(ctx, 0f, z, apronRaw);
-                road[i] = new Vector3(0f, y, z);
-            }
+            for (float z = HighwayZ + HighwayHalfWidth - 0.5f; z <= EntranceStartZ + 0.01f; z += 2f)
+                road.Add(new Vector3(0f, Mathf.Max(GroundY(ctx, 0f, z, -10f), MainlandRaw(0f, z)), z));
             SmoothHeights(road, 8, 3);
-            ctx.ApronY = road.First(p => p.z >= ctx.PortalZ).y;
-            for (int i = 0; i < road.Count; i++)
-                if (road[i].z < ctx.PortalZ + 6f) road[i] = new Vector3(0f, ctx.ApronY, road[i].z);
+            for (int i = 0; i < road.Count; i++)   // meet the highway level
+            {
+                float k = Mathf.SmoothStep(0f, 1f, (road[i].z - HighwayZ - HighwayHalfWidth) / 20f);
+                road[i] = new Vector3(0f, Mathf.Lerp(LandLevel, road[i].y, k), road[i].z);
+            }
             ctx.EntranceProfile = road;
 
             // Edit a copy of the ground mesh in world space.
@@ -75,6 +72,7 @@ namespace DinoPark.EditorTools
             {
                 Vector3 w = gt.TransformPoint(v[i]);
                 float y0 = w.y, y = y0;
+                if (w.z < -90f) y = Mathf.Max(y, MainlandRaw(w.x, w.z));   // the headland neck joins the mainland
                 y = Flatten(w, y, ramp, RampHalfWidth, RampShoulder);
                 y = Flatten(w, y, road, RoadHalfWidth, RoadShoulder);
                 if (!Mathf.Approximately(y, y0))

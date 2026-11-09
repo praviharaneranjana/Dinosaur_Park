@@ -68,6 +68,28 @@ namespace DinoPark.EditorTools
             return px;
         });
 
+        /// <summary>Four-lane highway: kerbs, white edge lines, dashed white lane lines, double yellow centre.</summary>
+        public static Texture2D Highway => Get("T_Highway", 256, 512, false, (w, h) =>
+        {
+            var px = new Color[w * h];
+            for (int j = 0; j < h; j++)
+            for (int i = 0; i < w; i++)
+            {
+                float u = (i + 0.5f) / w, v = (j + 0.5f) / h;
+                float n = Fbm(u * 8f, v, 8, 32, 0.6f, 73);
+                Color c = Color.Lerp(new Color(0.19f, 0.20f, 0.21f), new Color(0.30f, 0.30f, 0.30f), n);
+                bool kerb = u < 0.02f || u > 0.98f;
+                bool edge = (u > 0.035f && u < 0.048f) || (u > 0.952f && u < 0.965f);
+                bool lane = (Mathf.Abs(u - 0.26f) < 0.006f || Mathf.Abs(u - 0.74f) < 0.006f) && Mathf.Repeat(v * 4f, 1f) < 0.45f;
+                bool centre = Mathf.Abs(u - 0.492f) < 0.005f || Mathf.Abs(u - 0.508f) < 0.005f;
+                if (edge || lane) c = new Color(0.93f, 0.91f, 0.85f);
+                if (centre) c = new Color(0.95f, 0.72f, 0.29f);
+                if (kerb) c = new Color(0.86f, 0.83f, 0.76f);
+                px[j * w + i] = c;
+            }
+            return px;
+        });
+
         // ------------------------------------------------------------------ texture asset plumbing
         private static Texture2D Get(string name, int w, int h, bool normalMap, Func<int, int, Color[]> make, bool alpha = false, bool clamp = false)
         {
@@ -84,7 +106,7 @@ namespace DinoPark.EditorTools
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
             var ti = (TextureImporter)AssetImporter.GetAtPath(path);
             ti.textureType = normalMap ? TextureImporterType.NormalMap : TextureImporterType.Default;
-            ti.sRGBTexture = !normalMap && name == "T_Road";
+            ti.sRGBTexture = !normalMap && (name == "T_Road" || name == "T_Highway");
             ti.alphaSource = alpha ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
             ti.alphaIsTransparency = alpha;
             ti.wrapMode = clamp ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;

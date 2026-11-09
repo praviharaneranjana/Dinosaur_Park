@@ -4,9 +4,9 @@ using UnityEngine;
 namespace DinoPark.Environment
 {
     /// <summary>
-    /// Visitor cars that come out of the mountain tunnel, drive the entrance road to the plaza,
-    /// turn and drive back into the tunnel, where they are recycled. Cars follow one closed
-    /// waypoint loop at constant speed, spaced evenly. Pooled: no runtime allocation after Start.
+    /// Cars that follow one closed waypoint loop at constant speed, spaced evenly: highway
+    /// through traffic (U-turning far off screen) or visitors driving from the highway to the
+    /// plaza and back. Pooled: no runtime allocation after Start.
     /// </summary>
     public sealed class VehicleTraffic : MonoBehaviour
     {
@@ -38,6 +38,15 @@ namespace DinoPark.Environment
             waypoints = loop;
             carPrefabs = prefabs;
             modelYawOffset = yawOffset;
+        }
+
+        /// <summary>Sets the loop, car models, how many cars drive it and how fast (used by the island builder).</summary>
+        public void Configure(Vector3[] loop, GameObject[] prefabs, float yawOffset, int count, float metresPerSecond, int randomSeed)
+        {
+            Configure(loop, prefabs, yawOffset);
+            carCount = Mathf.Max(1, count);
+            speed = Mathf.Max(0.5f, metresPerSecond);
+            seed = randomSeed;
         }
 
         private void Start()

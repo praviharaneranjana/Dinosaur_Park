@@ -45,8 +45,16 @@ namespace DinoPark.EditorTools
                 Mesh work = Object.Instantiate(original);
                 MeshLodUtility.GenerateMeshLods(work, 0, -1);
                 AssetDatabase.DeleteAsset($"{LodFolder}/{key}.asset");     // old runtime-LOD asset
-                Mesh lod1 = work.lodCount > 1 ? LevelMesh(work, 1, key + "_LOD1") : null;
-                Mesh lod2 = work.lodCount > 2 ? LevelMesh(work, Mathf.Min(3, work.lodCount - 1), key + "_LOD2") : null;
+                // Palms, tree ferns and cycads are a few big frond cards: simplifying drops whole fronds,
+                // so the trees go bald when zoomed out. They keep the full mesh at every distance.
+                bool keepFronds = Has(key, "Palm", "FernTree", "Cycad");
+                Mesh lod1 = !keepFronds && work.lodCount > 1 ? LevelMesh(work, 1, key + "_LOD1") : null;
+                Mesh lod2 = !keepFronds && work.lodCount > 2 ? LevelMesh(work, Mathf.Min(3, work.lodCount - 1), key + "_LOD2") : null;
+                if (keepFronds)
+                {
+                    AssetDatabase.DeleteAsset($"{LodFolder}/{key}_LOD1.asset");
+                    AssetDatabase.DeleteAsset($"{LodFolder}/{key}_LOD2.asset");
+                }
                 Object.DestroyImmediate(work);
 
                 GameObject root = PrefabUtility.LoadPrefabContents(path);

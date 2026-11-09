@@ -15,9 +15,9 @@ namespace DinoPark.EditorTools
 {
     /// <summary>
     /// Unity-side polish of the imported Blender island (runs after IslandImporter, or from the menu):
-    /// wind on plants, flat walkable ramp and entrance road, rebuilt plateau cliff, animated river /
+    /// wind on plants, flat walkable ramp and park road, rebuilt plateau cliff, animated river /
     /// pond / mud water, rebuilt waterfalls with spray and mist, wave ocean with surf, the land side
-    /// (mountain, tunnel portal, asphalt road, visitor cars) and the east-side camera.
+    /// (flat mainland, highway, park road, entrance gate, traffic) and the east-side camera.
     /// Everything it creates lives under "--- Island Polish ---" and in Generated/Polish asset folders,
     /// and Blender objects it replaces are only disabled, so it is safe to run again.
     /// All positions are Unity world metres: Unity (x, y, z) = Blender (x, z, y) after the importer's
@@ -46,9 +46,8 @@ namespace DinoPark.EditorTools
             public GameObject Ground;
             public MeshCollider GroundCollider;
             public readonly List<string> Log = new List<string>();
-            public List<Vector3> EntranceProfile;   // road centre line from tunnel end to plaza, y = road height
-            public float ApronY;
-            public float PortalZ;
+            public List<Vector3> EntranceProfile;   // park road centre line from the highway to the plaza, y = ground height
+            public List<Vector3> Highway;           // highway centre line (west to east), y = ground height
         }
 
         [MenuItem("Dino Park/Island/Apply Polish Pass")]
@@ -98,8 +97,9 @@ namespace DinoPark.EditorTools
                 ("Wind", ConfigureWind),
                 ("Ramp and entrance road", FlattenPaths),
                 ("Plateau cliff", BuildCliff),
-                ("Mountain and tunnel", BuildMountainAndTunnel),
-                ("Road", BuildRoad),
+                ("Mainland", BuildMainland),
+                ("Roads", BuildRoads),
+                ("Entrance gate", BuildEntrance),
                 ("River, ponds and waterfalls", RestyleWater),
                 ("Ocean", BuildOcean),
                 ("Traffic", BuildTraffic),
