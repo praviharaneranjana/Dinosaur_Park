@@ -39,9 +39,9 @@ namespace DinoPark.EditorTools
             Texture2D normal = ProceduralTextures.WaterNormal;
             Texture2D foam = ProceduralTextures.Foam;
             Material river = Mat("M_Water_River", WaterShader, m => WaterBase(m, normal, foam,
-                new Color(0.30f, 0.82f, 0.76f), new Color(0.04f, 0.36f, 0.44f), 1.6f, 0.22f, 0.9f, 0.2f, 0.7f, 1.6f, 0.16f, 0.15f));
+                new Color(0.26f, 0.86f, 0.80f), new Color(0.03f, 0.27f, 0.43f), 2.2f, 0.25f, 1.2f, 0.18f, 0.45f, 1.6f, 0.22f, 0.08f));
             Material pond = Mat("M_Water_Pond", WaterShader, m => WaterBase(m, normal, foam,
-                new Color(0.28f, 0.78f, 0.74f), new Color(0.03f, 0.30f, 0.40f), 2.4f, 0.22f, 1.2f, 0.16f, 0.45f, 0.4f, 0.14f, 0.0f));
+                new Color(0.26f, 0.86f, 0.80f), new Color(0.03f, 0.27f, 0.43f), 2.4f, 0.25f, 1.3f, 0.16f, 0.4f, 0.4f, 0.2f, 0.0f));
             Material mud = Mat("M_Water_Mud", WaterShader, m =>
             {
                 WaterBase(m, normal, foam, new Color(0.42f, 0.33f, 0.22f), new Color(0.22f, 0.16f, 0.10f), 0.6f, 0.75f, 0.35f, 0.3f, 0.25f, 0.2f, 0.06f, 0f);
@@ -63,8 +63,14 @@ namespace DinoPark.EditorTools
             var temp = blenderRivers.Where(g => g.GetComponent<Collider>() == null).Select(g => g.AddComponent<MeshCollider>()).ToList();
             Physics.SyncTransforms();
             var surfaces = blenderRivers.Select(g => g.GetComponent<Collider>()).ToList();
-            RiverSurface(ctx, waterOut, "River", RiverLine, t => SampleWidths(RiverWidths, t), 0.65f, river, surfaces, true);
-            RiverSurface(ctx, waterOut, "Stream", StreamLine, t => Mathf.Lerp(5.4f, 8.6f, t), 0.95f, river, surfaces, false);
+            // plateau stream runs out to the cliff edge; the main fall starts exactly where it leaves the edge
+            Vector3 sEnd = StreamLine[StreamLine.Length - 1], sDir = sEnd - StreamLine[StreamLine.Length - 2];
+            sDir.y = 0f;
+            var streamLine = new List<Vector3>(StreamLine) { sEnd + sDir.normalized * 10f };
+            FallLip lip = RiverSurface(ctx, waterOut, "Stream", streamLine.ToArray(), t => Mathf.Lerp(5.4f, 8.6f, t), 0.95f, river, surfaces, false, true);
+            GameObject fallsPool = Find(water, "ISL2_FallsPool");
+            float poolY = fallsPool != null ? fallsPool.GetComponent<Renderer>().bounds.max.y : 0.07f;
+            BuildRiverSystem(ctx, waterOut, river, surfaces, fallsPool);
             foreach (MeshCollider c in temp) Object.DestroyImmediate(c);
             foreach (GameObject g in blenderRivers) g.SetActive(false);
 
@@ -89,7 +95,7 @@ namespace DinoPark.EditorTools
                 restyled++;
             }
 
-            int built = BuildWaterfalls(ctx, strands);
+            int built = BuildWaterfalls(ctx, strands, lip, poolY);
             ctx.Log.Add($"Water: {restyled} river/pond/mud pieces restyled, {built} waterfall strands rebuilt");
         }
 
@@ -164,8 +170,8 @@ namespace DinoPark.EditorTools
         /// surface height ray-cast from the Blender water and never rising downstream, flow along the line,
         /// depth profile deepest mid-channel (vertex A) so bank foam sits on the real bank line.
         /// </summary>
-        private static void RiverSurface(Ctx ctx, Transform parent, string name, Vector3[] line, System.Func<float, float> widthAt,
-            float speed, Material mat, List<Collider> surfaces, bool toSea)
+        private static FallLip RiverSurface(Ctx ctx, Transform parent, string name, Vector3[] line, System.Func<float, float> widthAt,
+            float speed, Material mat, List<Collider> surfaces, bool toSea, bool stopAtCliff = false)
         {
             List<Vector3> pts = Resample(line, 1.5f);
             for (int it = 0; it < 4; it++)
@@ -186,6 +192,26 @@ namespace DinoPark.EditorTools
                 if (!float.IsNaN(last)) best = Mathf.Min(best, last);
                 if (toSea) best = Mathf.Max(best, SeaLevel + 0.03f);
                 ys[i] = last = best;
+            }
+            var fall = new FallLip();
+            if (stopAtCliff)
+            {
+                // end one sample past the first point where the ground drops away below the water: the cliff edge
+                for (int i = 1; i < n; i++)
+                {
+                    if (GroundY(ctx, pts[i].x, pts[i].z, -50f) > ys[i] - 2.5f) continue;
+                    Vector3 tan = pts[i] - pts[i - 1];
+                    tan.y = 0f;
+                    fall = new FallLip
+                    {
+                        Valid = true,
+                        Lip = new Vector3(pts[i - 1].x, ys[i - 1], pts[i - 1].z) + tan * 0.6f,
+                        Flow = tan.normalized,
+                        Width = widthAt((i - 1) / (float)(n - 1)),
+                    };
+                    n = i + 1;
+                    break;
+                }
             }
 
             const int across = 9;
@@ -228,6 +254,7 @@ namespace DinoPark.EditorTools
                 mesh.RecalculateNormals();
             }
             MeshObject(name, parent, SaveMesh(mesh, "Water_" + name), new[] { mat }, false, ShadowCastingMode.Off);
+            return fall;
         }
 
         /// <summary>
@@ -302,9 +329,9 @@ namespace DinoPark.EditorTools
         }
 
         // ------------------------------------------------------------------ waterfalls
-        private static int BuildWaterfalls(Ctx ctx, List<Renderer> strands)
+        private static int BuildWaterfalls(Ctx ctx, List<Renderer> strands, FallLip main, float poolY)
         {
-            if (strands.Count == 0) return 0;
+            if (strands.Count == 0 && !main.Valid) return 0;
             Transform root = Group(ctx.Polish, "Waterfalls");
             Texture2D streaks = ProceduralTextures.Streaks;
             Texture2D foam = ProceduralTextures.Foam;
@@ -349,31 +376,45 @@ namespace DinoPark.EditorTools
 
             int built = 0;
             var hiddenRocks = 0;
+            var falls = new List<(string name, Vector3 lip, Vector3 flow, float width, float top, float bottom, float D)>();
+            if (main.Valid)
+            {
+                float mainH = main.Lip.y - (poolY - 0.12f);
+                falls.Add(("TRN4_Waterfall_Main", main.Lip, main.Flow, main.Width * 0.82f, main.Lip.y, poolY - 0.12f, Mathf.Max(mainH * 0.14f, 1.4f)));
+            }
             foreach (Renderer r in strands)
             {
+                if (main.Valid && r.name.Contains("Waterfall_")) continue;   // replaced by the main fall from the stream lip
                 Mesh src = r.GetComponent<MeshFilter>().sharedMesh;
                 if (src == null || !src.isReadable) continue;
                 Vector3[] w = src.vertices.Select(v => r.transform.TransformPoint(v)).ToArray();
                 float top = w.Max(p => p.y), bottom = w.Min(p => p.y);
                 float H = top - bottom;
                 if (H < 0.8f) continue;
-                Vector3 lip = Avg(w.Where(p => p.y > top - Mathf.Max(0.4f, H * 0.04f)));
+                Vector3 lipS = Avg(w.Where(p => p.y > top - Mathf.Max(0.4f, H * 0.04f)));
                 Vector3 baseC = Avg(w.Where(p => p.y < bottom + Mathf.Max(0.4f, H * 0.04f)));
-                Vector3 flow = new Vector3(baseC.x - lip.x, 0, baseC.z - lip.z);
-                float D = flow.magnitude;
-                flow = D > 0.05f ? flow / D : r.transform.forward;
+                Vector3 flowS = new Vector3(baseC.x - lipS.x, 0, baseC.z - lipS.z);
+                float DS = flowS.magnitude;
+                flowS = DS > 0.05f ? flowS / DS : r.transform.forward;
+                Vector3 sideS = Vector3.Cross(Vector3.up, flowS).normalized;
+                float widthS = Mathf.Max(1.0f, ExtentAlong(w.Where(p => p.y > top - H * 0.15f), sideS));
+                falls.Add((r.name, lipS, flowS, widthS, top, bottom, Mathf.Max(DS, H * 0.12f)));
+            }
+            foreach (var f in falls)
+            {
+                Vector3 lip = f.lip, flow = f.flow;
+                float width = f.width, top = f.top, bottom = f.bottom, D = f.D, H = top - bottom;
                 Vector3 side = Vector3.Cross(Vector3.up, flow).normalized;
-                float width = Mathf.Max(1.0f, ExtentAlong(w.Where(p => p.y > top - H * 0.15f), side));
-                D = Mathf.Max(D, H * 0.12f);
+                string fname = f.name;
 
-                Transform fall = Group(root, "Fall_" + r.name);
+                Transform fall = Group(root, "Fall_" + fname);
                 Mesh sheet = CurtainMesh(lip, flow, side, width, H, D);
-                MeshObject("Curtain", fall, SaveMesh(sheet, "Fall_" + r.name), new[] { curtain }, false, ShadowCastingMode.Off);
+                MeshObject("Curtain", fall, SaveMesh(sheet, "Fall_" + fname), new[] { curtain }, false, ShadowCastingMode.Off);
 
                 float poolY = bottom + 0.12f;
                 Vector3 impact = new Vector3(lip.x + flow.x * D, poolY, lip.z + flow.z * D);
                 float radius = width * 1.1f + Mathf.Clamp(H * 0.12f, 0.6f, 2.5f);
-                MeshObject("Plunge", fall, SaveMesh(DiscMesh(impact + Vector3.up * 0.04f, radius), "Plunge_" + r.name), new[] { plunge }, false, ShadowCastingMode.Off);
+                MeshObject("Plunge", fall, SaveMesh(DiscMesh(impact + Vector3.up * 0.04f, radius), "Plunge_" + fname), new[] { plunge }, false, ShadowCastingMode.Off);
 
                 float k = Mathf.Clamp(width / 4f, 0.35f, 1.6f) * Mathf.Clamp(H / 12f, 0.5f, 1.3f);
                 AddParticles(fall, "Spray", impact, side, width, spray, k, mistMode: false);
