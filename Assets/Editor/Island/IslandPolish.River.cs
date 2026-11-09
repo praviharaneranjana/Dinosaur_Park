@@ -147,6 +147,7 @@ namespace DinoPark.EditorTools
             {
                 m.CopyPropertiesFromMaterial(mat);
                 m.SetFloat("_UseFadeUV", 1f);
+                m.SetFloat("_EdgeFoamDistance", 0.1f);   // thin waterline foam, not a white rim on the gentle carved banks
                 m.renderQueue = mat.renderQueue;
             });
             MeshObject("River", parent, SaveMesh(mesh, "Water_River"), new[] { main }, false, ShadowCastingMode.Off);
