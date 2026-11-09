@@ -34,7 +34,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _AlphaDepth: 0.7
-    - _AlphaShallow: 0.7
+    - _AlphaShallow: 0.8
     - _DebugView: 0
     - _DepthRange: 1.2
     - _DriftSpeed: 0.03
@@ -45,9 +45,9 @@ Material:
     - _NormalStrength: 0.3
     - _NormalTiling: 0.25
     - _Ocean: 0
-    - _Reflectivity: 0.3
-    - _SpecIntensity: 1.6
-    - _SpecPower: 220
+    - _Reflectivity: 0.12
+    - _SpecIntensity: 0.35
+    - _SpecPower: 80
     - _SurfFrequency: 2.2
     - _SurfRange: 3.5
     - _SurfSpeed: 1.4

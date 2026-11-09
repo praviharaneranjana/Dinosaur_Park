@@ -16,7 +16,7 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2990
+  m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
   m_LockedProperties: 
@@ -33,21 +33,21 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _AlphaDepth: 0.35
-    - _AlphaShallow: 0.75
+    - _AlphaDepth: 0.45
+    - _AlphaShallow: 0.25
     - _DebugView: 0
     - _DepthRange: 0.6
     - _DriftSpeed: 0.03
-    - _EdgeFoamDistance: 0.06
+    - _EdgeFoamDistance: 0.12
     - _FlowFoam: 0
-    - _FlowSpeed: 0.2
+    - _FlowSpeed: 0.05
     - _FoamTiling: 0.35
-    - _NormalStrength: 0.25
+    - _NormalStrength: 0.35
     - _NormalTiling: 0.3
     - _Ocean: 0
-    - _Reflectivity: 0.25
-    - _SpecIntensity: 1.6
-    - _SpecPower: 220
+    - _Reflectivity: 0.12
+    - _SpecIntensity: 0.35
+    - _SpecPower: 60
     - _SurfFrequency: 2.2
     - _SurfRange: 3.5
     - _SurfSpeed: 1.4
@@ -57,10 +57,10 @@ Material:
     - _WaveAmp: 1
     - _WaveSpeed: 1
     m_Colors:
-    - _DeepColor: {r: 0.22, g: 0.16, b: 0.1, a: 1}
-    - _FoamColor: {r: 0.5, g: 0.43, b: 0.33, a: 1}
+    - _DeepColor: {r: 0.2, g: 0.15, b: 0.1, a: 1}
+    - _FoamColor: {r: 0.3, g: 0.23, b: 0.16, a: 1}
     - _HorizonColor: {r: 0.55, g: 0.72, b: 0.86, a: 1}
-    - _ShallowColor: {r: 0.42, g: 0.33, b: 0.22, a: 1}
+    - _ShallowColor: {r: 0.36, g: 0.28, b: 0.19, a: 1}
     - _SkyColor: {r: 0.3, g: 0.52, b: 0.8, a: 1}
     - _WaveDir: {r: 0.3, g: 0, b: -1, a: 0}
   m_BuildTextureStacks: []
