@@ -21,6 +21,8 @@ namespace DinoPark.EditorTools
         private const float RoadHalfWidth = 4.2f;
         private const float RoadShoulder = 7.0f;
         private const float EntranceStartZ = -72f;    // plaza edge
+        /// <summary>XZ box around the thin rock ridge on the north spit (flattened, replaced by kit rocks).</summary>
+        private static readonly Vector2 SpitStackMin = new Vector2(29f, 99f), SpitStackMax = new Vector2(45f, 122f);
 
         // ------------------------------------------------------------------ ramp + entrance road
         private static void FlattenPaths(Ctx ctx)
@@ -74,6 +76,9 @@ namespace DinoPark.EditorTools
                 float y0 = w.y, y = y0;
                 // The headland neck joins the mainland: where the mainland is higher, sink the island ground
                 // (its texture is painted seabed there) under it so the mainland mesh shows instead.
+                // North spit: the Blender ground has a 1-2 m thin rock ridge here, up to 18 m tall, painted with the
+                // sand texture (the "flat triangle" sea stack). Flatten it; BuildRocks puts a real rock stack there.
+                if (w.x > SpitStackMin.x && w.x < SpitStackMax.x && w.z > SpitStackMin.y && w.z < SpitStackMax.y) y = Mathf.Min(y, 0.8f);
                 bool sunk = false;
                 if (w.z < -90f)
                 {

@@ -96,6 +96,13 @@ namespace DinoPark.EditorTools
                 }
             }
 
+            // ---- north spit: real rock stack where the ground's thin ridge was flattened
+            foreach (var (x, z, h) in new[] { (36f, 104f, 9.5f), (37f, 110f, 7.5f), (35.5f, 116f, 5.5f), (38.5f, 107f, 3.5f), (34f, 112f, 3f), (36.5f, 119.5f, 2.5f) })
+            {
+                PlaceRock(kit, root, rng, new Vector3(x, GroundY(ctx, x, z, 0f), z), h, 0.15f);
+                stacks++;
+            }
+
             // ---- coastal sea stacks (flat low-poly Rock_Coast mounds) -> clusters of real rocks
             // ---- low-poly boulders near the cliff foot -> single rocks
             var candidates = new List<Transform>();
