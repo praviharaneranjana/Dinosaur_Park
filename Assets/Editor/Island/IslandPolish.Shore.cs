@@ -95,7 +95,7 @@ namespace DinoPark.EditorTools
             {
                 int id = j * nx + i;
                 index[id] = -1;
-                bool keep = (sea[id] && h[id] > -0.6f) || (!sea[id] && dist[id] <= 9);
+                bool keep = (sea[id] && h[id] > -1.6f) || (!sea[id] && dist[id] <= 9);
                 float x = x0 + i * ShoreCell, z = z0 + j * ShoreCell;
                 if (!keep || InRiver(x, z)) continue;
                 float edge = sea[id] ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (dist[id] - 6f) / 3f);
