@@ -78,19 +78,19 @@ namespace DinoPark.EditorTools
             Vector3 last = Vector3.positiveInfinity;
             foreach (var (at, outward) in foot)
             {
-                if ((at - last).sqrMagnitude < 5.5f * 5.5f) continue;
+                if ((at - last).sqrMagnitude < 6.5f * 6.5f) continue;
                 Vector2 a2 = new Vector2(at.x, at.z);
                 if (!float.IsInfinity(fallAt.x) && Vector2.Distance(a2, new Vector2(fallAt.x, fallAt.z)) < 9f) continue;   // keep the plunge clear
                 if (DistToPath(at, RampRoad, out _, out _) < RampHalfWidth + 3f) continue;
                 if (DistToPath(at, RiverLine, out float ra, out _) < SampleWidths(RiverWidths, Mathf.Clamp01(ra / 180f)) * 0.5f + 1f) continue;
                 last = at;
-                int n = 1 + rng.Next(3);                                                        // 1-3 rocks per spot
+                int n = 2 + rng.Next(3);                                                        // 2-4 rocks per spot, piled
                 for (int k = 0; k < n; k++)
                 {
                     Vector3 side = Vector3.Cross(Vector3.up, outward);
                     Vector3 p = at + outward * (0.4f + (float)rng.NextDouble() * 2.2f) + side * ((float)rng.NextDouble() - 0.5f) * 4f;
                     float g = GroundY(ctx, p.x, p.z, at.y);
-                    float h = k == 0 ? 2.6f + (float)rng.NextDouble() * 2.6f : 1.0f + (float)rng.NextDouble() * 1.4f;
+                    float h = k == 0 ? 4.0f + (float)rng.NextDouble() * 3.5f : 1.6f + (float)rng.NextDouble() * 2.0f;
                     PlaceRock(kit, root, rng, new Vector3(p.x, Mathf.Min(g, at.y + 0.5f), p.z), h, 0.3f);
                     apron++;
                 }
@@ -98,16 +98,20 @@ namespace DinoPark.EditorTools
 
             // ---- coastal sea stacks (flat low-poly Rock_Coast mounds) -> clusters of real rocks
             // ---- low-poly boulders near the cliff foot -> single rocks
+            var candidates = new List<Transform>();
             Transform props = ctx.Island.Find("Props");
-            if (props != null)
+            if (props != null) candidates.AddRange(props.Cast<Transform>());
+            foreach (Transform g in ctx.Polish.GetComponentsInChildren<Transform>(true))
+                if (g.name.Contains("Boulder") && g.parent != root && g.GetComponent<Renderer>() != null) candidates.Add(g);
+            if (candidates.Count > 0)
             {
-                foreach (Transform t in props.Cast<Transform>().ToList())
+                foreach (Transform t in candidates)
                 {
                     var r = t.GetComponent<Renderer>();
                     if (r == null || !t.gameObject.activeSelf) continue;
                     Bounds b = r.bounds;
-                    bool coastStack = t.name.Contains("RockyHill") && r.sharedMaterial != null && r.sharedMaterial.name.Contains("Coast");
-                    bool cliffBoulder = t.name.Contains("Boulder") && foot.Any(f => (new Vector2(f.at.x, f.at.z) - new Vector2(b.center.x, b.center.z)).sqrMagnitude < 14f * 14f);
+                    bool coastStack = t.name.Contains("RockyHill") && (b.min.y < SeaLevel + 1.1f || (r.sharedMaterial != null && r.sharedMaterial.name.Contains("Coast")));
+                    bool cliffBoulder = t.name.Contains("Boulder") && !t.name.Contains("Pillar");   // standing stones stay
                     if (!coastStack && !cliffBoulder) continue;
                     t.gameObject.SetActive(false);
                     float height = Mathf.Max(b.size.y, 0.8f);
@@ -131,7 +135,7 @@ namespace DinoPark.EditorTools
                     }
                 }
             }
-            ctx.Log.Add($"Rocks: {kit.Count} kit rocks; {apron} along the cliff foot ({foot.Count} foot columns), {stacks} sea stacks and {boulders} boulders replaced; cliff detail {(detail != null ? "riverbed photo" : "missing")}");
+            ctx.Log.Add($"Rocks: {kit.Count} kit rocks; {apron} along the cliff foot ({foot.Count} foot columns), {stacks} sea stacks / mounds and {boulders} boulders replaced; cliff detail {(detail != null ? "riverbed photo" : "missing")}");
         }
 
         /// <summary>One rock: random kit piece and yaw, a little tilt, scaled to <paramref name="height"/>, sunk by <paramref name="sink"/> of its height.</summary>
@@ -172,7 +176,7 @@ namespace DinoPark.EditorTools
             Material mat = Mat("M_Stones", "Universal Render Pipeline/Lit", m =>
             {
                 m.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(albedoPath));
-                m.SetColor("_BaseColor", new Color(0.92f, 0.9f, 0.86f));
+                m.SetColor("_BaseColor", new Color(0.82f, 0.80f, 0.78f));   // greyer, to sit with the cliff
                 m.SetTexture("_BumpMap", AssetDatabase.LoadAssetAtPath<Texture2D>(normalPath));
                 m.SetFloat("_BumpScale", 1.2f);
                 m.EnableKeyword("_NORMALMAP");
