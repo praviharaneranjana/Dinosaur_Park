@@ -229,7 +229,9 @@ Shader "DinoPark/Environment/Water"
                 half foamTex = SAMPLE_TEXTURE2D(_FoamTex, sampler_FoamTex, world * _FoamTiling + float2(t * 0.02, t * 0.013)).r;
                 #if defined(_OCEAN)
                     half alpha = lerp(_AlphaShallow, 1.0, saturate(min(depth, edgeDepth * 1.5) / max(_AlphaDepth, 0.01)));
-                    half edge = 1.0 - saturate(edgeDepth / max(_EdgeFoamDistance, 0.01));
+                    // No hard foam on the exact sea/sand cut: the coarse ground makes that line a zigzag.
+                    // Foam starts a little off the sand, and the beach swash sheet does the foam on the sand.
+                    half edge = (1.0 - saturate(edgeDepth / max(_EdgeFoamDistance, 0.01))) * smoothstep(0.0, 0.35, edgeDepth);
                 #else
                     half alpha = lerp(_AlphaShallow, 1.0, saturate(depth / max(_AlphaDepth, 0.01)));
                     half edge = 1.0 - saturate(depth / max(_EdgeFoamDistance, 0.01));
@@ -265,6 +267,7 @@ Shader "DinoPark/Environment/Water"
                 alpha = saturate(max(alpha, foam) + fresnel * 0.3);
                 #if defined(_OCEAN)
                     alpha *= input.color.a;
+                    alpha *= saturate(edgeDepth / 0.6);     // soft waterline: fade out over the last 0.6 m of water
                 #endif
                 alpha *= input.fade;
 
