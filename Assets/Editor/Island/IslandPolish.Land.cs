@@ -356,6 +356,19 @@ namespace DinoPark.EditorTools
 
             // sign lettering, both faces
             Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            // The default font shader ignores depth, so both faces drew over each other: use a
+            // depth-tested, back-face-culled cutout so each face shows only its own lettering.
+            Material letters = Mat("M_Sign_Letters", "Universal Render Pipeline/Unlit", m =>
+            {
+                m.SetTexture("_BaseMap", font.material.mainTexture);
+                m.SetColor("_BaseColor", Steel);
+                m.SetFloat("_AlphaClip", 1f);
+                m.SetFloat("_Cutoff", 0.5f);
+                m.EnableKeyword("_ALPHATEST_ON");
+                m.SetFloat("_Cull", (float)CullMode.Back);
+                m.SetOverrideTag("RenderType", "TransparentCutout");
+                m.renderQueue = (int)RenderQueue.AlphaTest;
+            });
             for (int s = -1; s <= 1; s += 2)
             {
                 var go = new GameObject(s < 0 ? "Sign_South" : "Sign_North");
@@ -371,7 +384,7 @@ namespace DinoPark.EditorTools
                 tm.alignment = TextAlignment.Center;
                 tm.color = Steel;
                 var r = go.GetComponent<MeshRenderer>();
-                r.sharedMaterial = font.material;
+                r.sharedMaterial = letters;
                 r.shadowCastingMode = ShadowCastingMode.Off;
             }
 
