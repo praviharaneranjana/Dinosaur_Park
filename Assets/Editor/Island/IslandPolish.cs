@@ -102,6 +102,7 @@ namespace DinoPark.EditorTools
                 ("Entrance gate", BuildEntrance),
                 ("River, ponds and waterfalls", RestyleWater),
                 ("Ground repaint and mud wallow", RepaintGround),
+                ("Rocks", BuildRocks),
                 ("Ocean", BuildOcean),
                 ("Shore swash and surf", BuildShore),
                 ("Traffic", BuildTraffic),
