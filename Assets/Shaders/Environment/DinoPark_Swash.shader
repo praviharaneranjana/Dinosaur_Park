@@ -21,8 +21,8 @@ Shader "DinoPark/Environment/Swash"
         _Period ("Wave Period (s)", Float) = 7
         _PhaseScale ("Phase Variation Along Shore", Float) = 1.6
         [Header(Encoding)]
-        _HeightRange ("Height Range In R (m)", Float) = 1.8
-        _HeightOffset ("Height Offset In R (m)", Float) = 0.3
+        _HeightRange ("Height Range In R (m)", Float) = 4
+        _HeightOffset ("Height Offset In R (m)", Float) = 2
     }
 
     SubShader

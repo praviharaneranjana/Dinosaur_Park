@@ -9,7 +9,7 @@ namespace DinoPark.EditorTools
     {
         private const string SwashShader = "DinoPark/Environment/Swash";
         private const float ShoreCell = 1f;
-        private const float SwashHeightRange = 1.8f, SwashHeightOffset = 0.3f;
+        private const float SwashHeightRange = 4.0f, SwashHeightOffset = 2.0f;   // R encodes -2..+2 m around sea level
 
         /// <summary>
         /// Moving water on every shore that touches the open sea: a 1 m sheet draped 4 cm over the ground
@@ -99,6 +99,7 @@ namespace DinoPark.EditorTools
                 float x = x0 + i * ShoreCell, z = z0 + j * ShoreCell;
                 if (!keep || InRiver(x, z)) continue;
                 float edge = sea[id] ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (dist[id] - 6f) / 3f);
+                edge *= Mathf.SmoothStep(0.45f, 0.75f, nrm[id].y);   // not on cliff faces: surf spray covers those
                 index[id] = verts.Count;
                 verts.Add(new Vector3(x, h[id] + SeaLevel + 0.04f, z));
                 normals.Add(nrm[id]);
