@@ -411,8 +411,8 @@ namespace DinoPark.EditorTools
                 Mesh sheet = CurtainMesh(lip, flow, side, width, H, D);
                 MeshObject("Curtain", fall, SaveMesh(sheet, "Fall_" + fname), new[] { curtain }, false, ShadowCastingMode.Off);
 
-                float poolY = bottom + 0.12f;
-                Vector3 impact = new Vector3(lip.x + flow.x * D, poolY, lip.z + flow.z * D);
+                float surfaceY = bottom + 0.12f;
+                Vector3 impact = new Vector3(lip.x + flow.x * D, surfaceY, lip.z + flow.z * D);
                 float radius = width * 1.1f + Mathf.Clamp(H * 0.12f, 0.6f, 2.5f);
                 MeshObject("Plunge", fall, SaveMesh(DiscMesh(impact + Vector3.up * 0.04f, radius), "Plunge_" + fname), new[] { plunge }, false, ShadowCastingMode.Off);
 
