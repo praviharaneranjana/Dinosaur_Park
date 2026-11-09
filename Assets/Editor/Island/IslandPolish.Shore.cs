@@ -12,7 +12,7 @@ namespace DinoPark.EditorTools
         private const float SwashHeightRange = 4.0f, SwashHeightOffset = 2.0f;   // R encodes -2..+2 m around sea level
 
         /// <summary>
-        /// Moving water on every shore that touches the open sea: a 1 m sheet draped 4 cm over the ground
+        /// Moving water on every shore that touches the open sea: a 1 m sheet draped 12 cm over the ground (clears the coarse ground's creases)
         /// from just under sea level up the beach, which the Swash shader animates (waves run up the sand
         /// and drain back, foam at the front, wet sand behind). Where the coast is a cliff, breaking-wave
         /// spray bursts against the rock. Inland water (river banks, ponds, swamp) is left alone.
@@ -29,9 +29,11 @@ namespace DinoPark.EditorTools
             {
                 float best = float.NegativeInfinity;
                 normal = Vector3.up;
+                bool onCliff = false;
                 var ray = new Ray(new Vector3(x, 300f, z), Vector3.down);
                 foreach (Collider c in ground)
-                    if (c.Raycast(ray, out RaycastHit hit, 600f) && hit.point.y > best) { best = hit.point.y; normal = hit.normal; }
+                    if (c.Raycast(ray, out RaycastHit hit, 600f) && hit.point.y > best) { best = hit.point.y; normal = hit.normal; onCliff = c.name == "Cliff_Plateau"; }
+                if (onCliff) return 50f;   // cliff walls and ledges are not beach: keep the sheet off them
                 return float.IsNegativeInfinity(best) ? -40f : best;
             }
 
@@ -101,7 +103,7 @@ namespace DinoPark.EditorTools
                 float edge = sea[id] ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (dist[id] - 6f) / 3f);
                 edge *= Mathf.SmoothStep(0.45f, 0.75f, nrm[id].y);   // not on cliff faces: surf spray covers those
                 index[id] = verts.Count;
-                verts.Add(new Vector3(x, h[id] + SeaLevel + 0.04f, z));
+                verts.Add(new Vector3(x, h[id] + SeaLevel + 0.12f, z));
                 normals.Add(nrm[id]);
                 cols.Add(new Color(Mathf.Clamp01((h[id] + SwashHeightOffset) / SwashHeightRange), 0f, 0f, edge));
             }

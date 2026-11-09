@@ -1,5 +1,5 @@
 // Dino Park Tycoon - beach swash (URP forward, mobile).
-// A thin sheet laid 4 cm over the beach. Vertex colour R = ground height above sea level
+// A thin sheet laid 12 cm over the beach. Vertex colour R = ground height above sea level
 // ((R * _HeightRange) - _HeightOffset metres), A = fade at the sheet's inland edge.
 // Each wave runs up the sand (fast) to _RunUp metres above sea level and drains back (slow), with
 // a foam line at its front and darker wet sand left behind. Phase changes along the shore so the
