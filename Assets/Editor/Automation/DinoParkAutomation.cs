@@ -102,6 +102,10 @@ namespace DinoPark.EditorTools
                         AssetDatabase.SaveAssets();
                         break;
                     }
+                    case "active":   // active <exact object name> <0|1>: show/hide every scene object with that name (not saved)
+                        foreach (Transform t in UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+                            if (t.name == a[1]) t.gameObject.SetActive(a[2] == "1");
+                        break;
                     case "inspect":   // inspect <name part>: renderers, materials, shaders, queues
                         foreach (Renderer r in UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include))
                         {
