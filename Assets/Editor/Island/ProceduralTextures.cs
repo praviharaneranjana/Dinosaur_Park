@@ -47,6 +47,14 @@ namespace DinoPark.EditorTools
             float c = Mathf.SmoothStep(0.88f, 1f, cracks);
             return Mathf.Clamp01(0.5f + (n - 0.5f) * 0.9f - c * 0.35f);
         }));
+        /// <summary>Grey grass detail (mean 0.5): short blade streaks and tufts, tiles at ~1 m, breaks up the painted look.</summary>
+        public static Texture2D GrassDetail => Get("T_GrassDetail", 512, 512, false, (w, h) => Grey(w, h, (x, y) =>
+        {
+            float blades = Noise2(x * 96f, y * 18f, 96, 18, 71) * 0.5f + Noise2(x * 18f, y * 96f, 18, 96, 73) * 0.5f;
+            float tufts = Fbm(x, y, 4, 8, 0.55f, 79);
+            float speck = Noise2(x * 160f, y * 160f, 160, 160, 83);
+            return Mathf.Clamp01(0.5f + (blades - 0.5f) * 0.55f + (tufts - 0.5f) * 0.45f + (speck - 0.5f) * 0.2f);
+        }));
         public static Texture2D Road => Get("T_Road", 128, 512, false, (w, h) =>
         {
             var px = new Color[w * h];

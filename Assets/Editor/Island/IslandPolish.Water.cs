@@ -52,7 +52,10 @@ namespace DinoPark.EditorTools
             {
                 WaterBase(m, normal, foam, new Color(0.30f, 0.34f, 0.15f), new Color(0.09f, 0.13f, 0.06f), 1.2f, 0.7f, 0.7f, 0.25f, 0.3f, 0.2f, 0.3f, 0f);
                 m.SetColor("_FoamColor", new Color(0.55f, 0.62f, 0.35f));
-                m.SetFloat("_Reflectivity", 0.3f);
+                m.SetFloat("_Reflectivity", 0.12f);   // was 0.3: the swamp pools read as shiny metal
+                m.SetFloat("_SpecIntensity", 0.35f);
+                m.SetFloat("_SpecPower", 80f);
+                m.SetFloat("_AlphaShallow", 0.8f);
             });
 
             // River and plateau stream: Blender's are thin strips (vertices only on the banks), so build
