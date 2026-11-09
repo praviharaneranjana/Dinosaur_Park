@@ -148,8 +148,8 @@ namespace DinoPark.EditorTools
                 m.EnableKeyword("_TRIPLANAR");
                 m.SetFloat("_Triplanar", 1f);
                 m.SetTexture("_DetailMap", ProceduralTextures.GrassDetail);
-                m.SetFloat("_DetailTiling", 0.9f);
-                m.SetFloat("_DetailStrength", 0.55f);
+                m.SetFloat("_DetailTiling", 1.4f);
+                m.SetFloat("_DetailStrength", 0.7f);
                 m.SetFloat("_StrataStrength", 0f);
                 m.SetFloat("_MossAmount", 0f);
             });
@@ -169,8 +169,9 @@ namespace DinoPark.EditorTools
             }
 
             int wallowParts = BuildWallow(ctx);
+            int grassAdded = ScatterGrass(ctx, path, au, av);
             ctx.Log.Add($"Ground: uv fit residual {residual:F4}, {pxMetres:F2} m per mask texel, opening radius {R} px; grass {grass}; " +
-                        $"wallow at ({wallowCentre.x:F0},{wallowCentre.y:F0}) {WallowRadii.x * 2:F0}x{WallowRadii.y * 2:F0} m, {wallowParts} wallow props; {mossy} rock materials get grassy tops");
+                        $"wallow at ({wallowCentre.x:F0},{wallowCentre.y:F0}) {WallowRadii.x * 2:F0}x{WallowRadii.y * 2:F0} m, {wallowParts} wallow props; {mossy} rock materials get grassy tops, {grassAdded} grass clumps added");
         }
 
         // ------------------------------------------------------------------ wallow
@@ -296,7 +297,7 @@ namespace DinoPark.EditorTools
             for (int r = 1; r <= rings; r++)
             for (int s = 0; s < seg; s++)
             {
-                float rr = r / (float)rings * 1.08f, a = s / (float)seg * Mathf.PI * 2f;
+                float rr = r / (float)rings * 0.97f, a = s / (float)seg * Mathf.PI * 2f;
                 Vector2 l = new Vector2(Mathf.Cos(a) * WallowRadii.x * rr, Mathf.Sin(a) * WallowRadii.y * rr);
                 Vector2 w = wallowCentre + new Vector2(l.x * ca - l.y * sa, l.x * sa + l.y * ca);
                 float g = GroundY(ctx, w.x, w.y, wallowLevel - 0.5f);
@@ -324,12 +325,12 @@ namespace DinoPark.EditorTools
             Material mud = Mat("M_Water_Mud", WaterShader, m => { });
             mud.SetColor("_ShallowColor", new Color(0.36f, 0.28f, 0.19f));
             mud.SetColor("_DeepColor", new Color(0.20f, 0.15f, 0.10f));
-            mud.SetFloat("_AlphaShallow", 0.85f);
-            mud.SetFloat("_AlphaDepth", 0.25f);
+            mud.SetFloat("_AlphaShallow", 0.25f);
+            mud.SetFloat("_AlphaDepth", 0.45f);
             mud.SetFloat("_Reflectivity", 0.12f);
             mud.SetFloat("_SpecIntensity", 0.35f);
             mud.SetFloat("_SpecPower", 60f);
-            mud.SetFloat("_NormalStrength", 0.2f);
+            mud.SetFloat("_NormalStrength", 0.35f);
             mud.SetFloat("_FlowSpeed", 0.05f);
             mud.SetFloat("_EdgeFoamDistance", 0.12f);
             mud.SetColor("_FoamColor", new Color(0.30f, 0.23f, 0.16f));
@@ -356,6 +357,63 @@ namespace DinoPark.EditorTools
                 go.transform.SetPositionAndRotation(new Vector3(w.x, g - 0.1f, w.y), Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f));
                 float s = kind.StartsWith("TRN") ? 0.6f + (float)rng.NextDouble() * 0.5f : 1.6f + (float)rng.NextDouble() * 0.8f;
                 go.transform.localScale = Vector3.one * s;
+                placed++;
+            }
+            return placed;
+        }
+
+        /// <summary>
+        /// Extra grass clumps on open land (meadows, mounds, plateau) so the ground reads as grass from the game
+        /// camera. Skips paths, roads, the plaza, water, the wallow, beaches and steep ground. Cheap kinds only
+        /// (600-1360 tris); the mobile LOD step culls them at distance.
+        /// </summary>
+        private static int ScatterGrass(Ctx ctx, float[] pathMask, Vector3 au, Vector3 av)
+        {
+            var kinds = new List<(GameObject prefab, float scale, float weight)>();
+            Transform plants = ctx.Island.Find("Plants");
+            foreach (var (k, wgt) in new[] { ("PLN_Grass_ShortLush", 0.3f), ("PLN_Grass_Tall", 0.4f), ("PLN_Grass_Dry", 0.3f) })
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/{k}.prefab");
+                if (prefab == null) continue;
+                float s = 1.5f;
+                if (plants != null)
+                {
+                    var same = plants.Cast<Transform>().Where(c => PrefabUtility.GetCorrespondingObjectFromSource(c.gameObject) == prefab).ToList();
+                    if (same.Count > 0) s = same.Average(c => c.localScale.y);
+                }
+                kinds.Add((prefab, s, wgt));
+            }
+            if (kinds.Count == 0) return 0;
+            Bounds land = ctx.Ground.GetComponent<Renderer>().bounds;
+            GameObject pool = Find(ctx.Island, "Water/ISL2_FallsPool");
+            Bounds poolB = pool != null ? pool.GetComponent<Renderer>().bounds : new Bounds(Vector3.one * 9999f, Vector3.zero);
+            poolB.Expand(new Vector3(3f, 50f, 3f));
+            Transform group = Group(ctx.Polish, "Grass");
+            var rng = new System.Random(2027);
+            int placed = 0;
+            for (int tries = 0; tries < 30000 && placed < 700; tries++)
+            {
+                float x = Mathf.Lerp(land.min.x, land.max.x, (float)rng.NextDouble());
+                float z = Mathf.Lerp(Mathf.Max(land.min.z, -112f), land.max.z, (float)rng.NextDouble());
+                var p = new Vector3(x, 0f, z);
+                if (!ctx.GroundCollider.Raycast(new Ray(new Vector3(x, 300f, z), Vector3.down), out RaycastHit hit, 600f)) continue;
+                if (hit.point.y < SeaLevel + 1.2f || hit.normal.y < 0.82f) continue;                       // beach, banks, slopes
+                float u = au.x * x + au.y * z + au.z, v = av.x * x + av.y * z + av.z;
+                if (u < 0f || u > 1f || v < 0f || v > 1f) continue;
+                if (Bilinear(pathMask, MaskRes, u * MaskRes - 0.5f, v * MaskRes - 0.5f) > 0.05f) continue;   // dirt paths
+                if (DistToPath(p, RiverLine, out _, out _) < 9f || DistToPath(p, StreamLine, out _, out _) < 7f) continue;
+                if (DistToPath(p, RampRoad, out _, out _) < RampHalfWidth + 2f) continue;
+                if (ctx.EntranceProfile != null && DistToPath(p, ctx.EntranceProfile, out _, out _) < RoadHalfWidth + 2f) continue;
+                if (Mathf.Abs(x) < 20f && z > -84f && z < -46f) continue;                                    // plaza
+                if (WallowEllipse(new Vector2(x, z)) < 1.5f || poolB.Contains(new Vector3(x, poolB.center.y, z))) continue;
+                // denser in patches, never a uniform carpet
+                if (ProceduralTextures.WorldFbm(x * 0.05f, z * 0.05f, 2, 1f, 101) < 0.38f) continue;
+                float pick = (float)rng.NextDouble(), acc = 0f;
+                var kind = kinds[kinds.Count - 1];
+                foreach (var k in kinds) { acc += k.weight; if (pick <= acc) { kind = k; break; } }
+                var go = (GameObject)PrefabUtility.InstantiatePrefab(kind.prefab, group);
+                go.transform.SetPositionAndRotation(hit.point - Vector3.up * 0.05f, Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f));
+                go.transform.localScale = Vector3.one * kind.scale * (0.75f + (float)rng.NextDouble() * 0.5f);
                 placed++;
             }
             return placed;
