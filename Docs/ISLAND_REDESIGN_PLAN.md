@@ -42,6 +42,6 @@ Log every pack used in `ASSET_LICENSES.md` before it ships.
 1. Mainland, highway, entrance, traffic, palm LOD fix. **Done 9 Nov** (`IslandPolish.Land.cs`).
 2. Waterfall pool, river, banks, mouth. **Done 9 Nov** (`IslandPolish.River.cs`: one height-grid surface pool->sea, carved channel, uv0 fade into the sea; main fall from the stream lip).
 3. Ocean shoreline, swash, cliff surf. **Done 9 Nov** (`IslandPolish.Shore.cs`, `DinoPark_Swash.shader`). Cause of the jagged beach: the island ground is ~3 m triangles reaching far out to sea and the beach was a flat shelf at sea level, so sea and sand z-fought along triangle edges. Fix: steeper profile through the waterline, flat ocean in the last 1.5 m of depth, soft ocean edge, and a 1 m swash sheet with a waterline lip that covers the cut. Rocks under the cliffs and the jagged cliff foot move to phase 5.
-4. Ground: grass, mud wallow, paths.
+4. Ground: grass, mud wallow, paths. **Done 9 Nov** (`IslandPolish.Ground.cs`): wide brown areas in the ground texture become grass (morphological opening keeps thin paths), paths retoned to packed earth, four puddles merged into one 38 x 24 m wallow with a carved basin, grass-blade detail on the ground, grassy tops on rock mounds, 700 extra grass clumps, matte swamp water. Editor stats after this pass: 1.42M tris, 1860 draw calls in the full view; check fps on the phone in phase 6.
 5. Cliffs and sea stacks from the stones kit.
 6. Android build, phone check, evidence in `production/qa/evidence/`.
