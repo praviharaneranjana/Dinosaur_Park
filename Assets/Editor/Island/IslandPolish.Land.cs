@@ -102,8 +102,8 @@ namespace DinoPark.EditorTools
                 Vector3 p = verts[i];
                 float n = ProceduralTextures.WorldFbm(p.x * 0.03f, p.z * 0.03f, 3, 1f, 23);
                 float patch = ProceduralTextures.WorldFbm(p.x * 0.008f, p.z * 0.008f, 2, 1f, 61);
-                Color grass = Color.Lerp(new Color(0.38f, 0.55f, 0.22f), new Color(0.53f, 0.66f, 0.30f), n);
-                grass = Color.Lerp(grass, new Color(0.47f, 0.60f, 0.27f), Mathf.SmoothStep(0.6f, 0.8f, patch) * 0.6f);   // field patches, still green
+                Color grass = Color.Lerp(new Color(0.31f, 0.44f, 0.17f), new Color(0.44f, 0.55f, 0.24f), n);
+                grass = Color.Lerp(grass, new Color(0.46f, 0.52f, 0.25f), Mathf.SmoothStep(0.6f, 0.8f, patch) * 0.5f);   // field patches, still green
                 Color sand = Color.Lerp(new Color(0.80f, 0.73f, 0.56f), new Color(0.86f, 0.79f, 0.62f), n);
                 float inland = CoastZ(p.x) - p.z;   // sand only on the shore, never inland hollows
                 Color c = Color.Lerp(sand, grass, Mathf.Max(Mathf.Clamp01((p.y - (SeaLevel + 0.5f)) / 1.0f), Mathf.SmoothStep(14f, 26f, inland)));
@@ -117,8 +117,8 @@ namespace DinoPark.EditorTools
             Material groundMat = Mat("M_Mainland", LitShader, m =>
             {
                 Opaque(m, Color.white, 0.05f);
-                RockDetail(m, 0.35f, 0f, 0f);
-                m.SetFloat("_DetailTiling", 0.25f);
+                RockDetail(m, 0.55f, 0f, 0.2f);
+                m.SetFloat("_DetailTiling", 0.4f);
                 m.SetFloat("_Cull", (float)CullMode.Back);
             });
             GameObject mainland = MeshObject("Mainland", land, mesh, new[] { groundMat }, true);
