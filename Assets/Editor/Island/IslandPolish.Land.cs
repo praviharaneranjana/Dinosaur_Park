@@ -103,9 +103,10 @@ namespace DinoPark.EditorTools
                 float n = ProceduralTextures.WorldFbm(p.x * 0.03f, p.z * 0.03f, 3, 1f, 23);
                 float patch = ProceduralTextures.WorldFbm(p.x * 0.008f, p.z * 0.008f, 2, 1f, 61);
                 Color grass = Color.Lerp(new Color(0.38f, 0.55f, 0.22f), new Color(0.53f, 0.66f, 0.30f), n);
-                grass = Color.Lerp(grass, new Color(0.60f, 0.62f, 0.33f), Mathf.SmoothStep(0.62f, 0.8f, patch) * 0.5f);   // drier fields
+                grass = Color.Lerp(grass, new Color(0.47f, 0.60f, 0.27f), Mathf.SmoothStep(0.6f, 0.8f, patch) * 0.6f);   // field patches, still green
                 Color sand = Color.Lerp(new Color(0.80f, 0.73f, 0.56f), new Color(0.86f, 0.79f, 0.62f), n);
-                Color c = Color.Lerp(sand, grass, Mathf.Clamp01((p.y - (SeaLevel + 0.5f)) / 1.0f));
+                float inland = CoastZ(p.x) - p.z;   // sand only on the shore, never inland hollows
+                Color c = Color.Lerp(sand, grass, Mathf.Max(Mathf.Clamp01((p.y - (SeaLevel + 0.5f)) / 1.0f), Mathf.SmoothStep(14f, 26f, inland)));
                 if (p.y < SeaLevel - 0.2f) c = Color.Lerp(sand * 0.75f, sand, Mathf.Clamp01((p.y - SeaLevel + 2.5f) / 2.3f));
                 c.a = 1f;
                 colors[i] = c;
