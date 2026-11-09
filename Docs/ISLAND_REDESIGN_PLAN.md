@@ -39,9 +39,9 @@ park sign, and drive to the plaza. No mountain, no tunnel.
 Log every pack used in `ASSET_LICENSES.md` before it ships.
 
 ## Order
-1. Mainland, highway, entrance, traffic, palm LOD fix.
-2. Waterfall pool, river, banks, mouth.
-3. Ocean shoreline, swash, cliff surf, rocks.
+1. Mainland, highway, entrance, traffic, palm LOD fix. **Done 9 Nov** (`IslandPolish.Land.cs`).
+2. Waterfall pool, river, banks, mouth. **Done 9 Nov** (`IslandPolish.River.cs`: one height-grid surface pool->sea, carved channel, uv0 fade into the sea; main fall from the stream lip).
+3. Ocean shoreline, swash, cliff surf. **Done 9 Nov** (`IslandPolish.Shore.cs`, `DinoPark_Swash.shader`). Cause of the jagged beach: the island ground is ~3 m triangles reaching far out to sea and the beach was a flat shelf at sea level, so sea and sand z-fought along triangle edges. Fix: steeper profile through the waterline, flat ocean in the last 1.5 m of depth, soft ocean edge, and a 1 m swash sheet with a waterline lip that covers the cut. Rocks under the cliffs and the jagged cliff foot move to phase 5.
 4. Ground: grass, mud wallow, paths.
 5. Cliffs and sea stacks from the stones kit.
 6. Android build, phone check, evidence in `production/qa/evidence/`.
